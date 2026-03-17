@@ -1,0 +1,489 @@
+[  0%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/defaultCalibration.cpp.obj
+[  0%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/generic/50W/imaxB6.cpp.obj
+[  5%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/generic/50W/SMPS_PID.cpp.obj
+[  5%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/generic/50W/AnalogInputsADC.cpp.obj
+[  5%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/generic/50W/outputPWM.cpp.obj
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\generic\50W\outputPWM.cpp:55:9: warning: 'OUTPUT_PWM_IRQ_PRIORITY' redefined
+   55 | #define OUTPUT_PWM_IRQ_PRIORITY 0
+      |         ^~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\generic\50W\outputPWM.cpp:21:
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu/irq_priority.h:27:9: note: this is the location of the previous definition
+   27 | #define OUTPUT_PWM_IRQ_PRIORITY         1
+      |         ^~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\generic\50W\outputPWM.cpp:66:9: warning: 'PWMA' redefined
+   66 | #define PWMA (&dummy_pwma)
+      |         ^~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\generic\50W\outputPWM.cpp:38:9: note: this is the location of the previous definition
+   38 | #define PWMA 0
+      |         ^~~~
+[  5%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/TxHardSerial.cpp.obj
+In file included from C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\TxHardSerial.cpp:31:
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:544:13: warning: 'void uart0_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  544 | static void uart0_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:545:13: warning: 'void uart0_callback_softwareoverrun(uint16_t)' declared 'static' but never defined [-Wunused-function]
+  545 | static void uart0_callback_softwareoverrun(uint16_t rx_data);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:546:13: warning: 'void uart0_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  546 | static void uart0_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:547:13: warning: 'void uart0_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  547 | static void uart0_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:548:13: warning: 'void spi00_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  548 | static void spi00_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:549:13: warning: 'void spi00_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  549 | static void spi00_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:550:13: warning: 'void spi00_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  550 | static void spi00_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:551:13: warning: 'void spi01_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  551 | static void spi01_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:552:13: warning: 'void spi01_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  552 | static void spi01_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:553:13: warning: 'void spi01_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  553 | static void spi01_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:554:13: warning: 'void iic00_callback_master_receiveend()' declared 'static' but never defined [-Wunused-function]
+  554 | static void iic00_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:555:13: warning: 'void iic00_callback_master_sendend()' declared 'static' but never defined [-Wunused-function]
+  555 | static void iic00_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:556:13: warning: 'void iic00_callback_master_error(MD_STATUS)' declared 'static' but never defined [-Wunused-function]
+  556 | static void iic00_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:557:13: warning: 'void iic01_callback_master_receiveend()' declared 'static' but never defined [-Wunused-function]
+  557 | static void iic01_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:558:13: warning: 'void iic01_callback_master_sendend()' declared 'static' but never defined [-Wunused-function]
+  558 | static void iic01_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:559:13: warning: 'void iic01_callback_master_error(MD_STATUS)' declared 'static' but never defined [-Wunused-function]
+  559 | static void iic01_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:560:13: warning: 'void uart1_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  560 | static void uart1_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:561:13: warning: 'void uart1_callback_softwareoverrun(uint16_t)' declared 'static' but never defined [-Wunused-function]
+  561 | static void uart1_callback_softwareoverrun(uint16_t rx_data);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:562:13: warning: 'void uart1_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  562 | static void uart1_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:563:13: warning: 'void uart1_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  563 | static void uart1_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:564:13: warning: 'void spi10_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  564 | static void spi10_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:565:13: warning: 'void spi10_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  565 | static void spi10_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:566:13: warning: 'void spi10_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  566 | static void spi10_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:567:13: warning: 'void spi11_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  567 | static void spi11_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:568:13: warning: 'void spi11_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  568 | static void spi11_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:569:13: warning: 'void spi11_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  569 | static void spi11_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:570:13: warning: 'void iic10_callback_master_receiveend()' declared 'static' but never defined [-Wunused-function]
+  570 | static void iic10_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:571:13: warning: 'void iic10_callback_master_sendend()' declared 'static' but never defined [-Wunused-function]
+  571 | static void iic10_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:572:13: warning: 'void iic10_callback_master_error(MD_STATUS)' declared 'static' but never defined [-Wunused-function]
+  572 | static void iic10_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:573:13: warning: 'void iic11_callback_master_receiveend()' declared 'static' but never defined [-Wunused-function]
+  573 | static void iic11_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:574:13: warning: 'void iic11_callback_master_sendend()' declared 'static' but never defined [-Wunused-function]
+  574 | static void iic11_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:575:13: warning: 'void iic11_callback_master_error(MD_STATUS)' declared 'static' but never defined [-Wunused-function]
+  575 | static void iic11_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:576:13: warning: 'void uart2_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  576 | static void uart2_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:577:13: warning: 'void uart2_callback_softwareoverrun(uint16_t)' declared 'static' but never defined [-Wunused-function]
+  577 | static void uart2_callback_softwareoverrun(uint16_t rx_data);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:578:13: warning: 'void uart2_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  578 | static void uart2_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:579:13: warning: 'void uart2_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  579 | static void uart2_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:580:13: warning: 'void spi20_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  580 | static void spi20_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:581:13: warning: 'void spi20_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  581 | static void spi20_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:582:13: warning: 'void spi20_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  582 | static void spi20_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:583:13: warning: 'void spi21_callback_receiveend()' declared 'static' but never defined [-Wunused-function]
+  583 | static void spi21_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:584:13: warning: 'void spi21_callback_sendend()' declared 'static' but never defined [-Wunused-function]
+  584 | static void spi21_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:585:13: warning: 'void spi21_callback_error(uint8_t)' declared 'static' but never defined [-Wunused-function]
+  585 | static void spi21_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:586:13: warning: 'void iic20_callback_master_receiveend()' declared 'static' but never defined [-Wunused-function]
+  586 | static void iic20_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:587:13: warning: 'void iic20_callback_master_sendend()' declared 'static' but never defined [-Wunused-function]
+  587 | static void iic20_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:588:13: warning: 'void iic20_callback_master_error(MD_STATUS)' declared 'static' but never defined [-Wunused-function]
+  588 | static void iic20_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:589:13: warning: 'void iic21_callback_master_receiveend()' declared 'static' but never defined [-Wunused-function]
+  589 | static void iic21_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:590:13: warning: 'void iic21_callback_master_sendend()' declared 'static' but never defined [-Wunused-function]
+  590 | static void iic21_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/matia/Documents/cheali-charger/src/hardware/cms32-CMS32L051/cpu/CMSIS/StdDriver/inc/sci.h:591:13: warning: 'void iic21_callback_master_error(MD_STATUS)' declared 'static' but never defined [-Wunused-function]
+  591 | static void iic21_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 10%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/UtilsD.cpp.obj
+[ 10%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/cpu.cpp.obj
+[ 10%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/memory.cpp.obj
+[ 10%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/Serial.cpp.obj
+[ 15%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/Timer0.cpp.obj
+[ 15%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/StackInfo.cpp.obj
+[ 15%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/IO.cpp.obj
+[ 15%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/TxSoftSerial.cpp.obj
+[ 21%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/StdDriver/src/clk.c.obj
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\clk.c: In function 'CLK_MainOsc_Setting':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\clk.c:120:23: warning: unused variable 'w_count' [-Wunused-variable]
+  120 |     volatile uint32_t w_count;
+      |                       ^~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\clk.c: In function 'CLK_Fclk_Select':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\clk.c:219:23: warning: unused variable 'w_count' [-Wunused-variable]
+  219 |     volatile uint32_t w_count;
+      |                       ^~~~~~~
+[ 21%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/StdDriver/src/adc.c.obj
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\adc.c: In function 'ADC_Converse':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\adc.c:199:23: warning: unused variable 'flag' [-Wunused-variable]
+  199 |     volatile uint8_t  flag;
+      |                       ^~~~
+[ 21%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/StdDriver/src/tim4.c.obj
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c: In function 'TM40_Get_PulsePeriod':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:458:12: warning: 'period' may be used uninitialized [-Wmaybe-uninitialized]
+  458 |     return (period);
+      |            ^
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:348:14: note: 'period' was declared here
+  348 |     uint32_t period;
+      |              ^~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c: In function 'TM40_Get_PulseWidth':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:580:12: warning: 'width' may be used uninitialized [-Wmaybe-uninitialized]
+  580 |     return (width);
+      |            ^
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:470:14: note: 'width' was declared here
+  470 |     uint32_t width;
+      |              ^~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c: In function 'TM41_Get_PulsePeriod':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:1261:12: warning: 'period' may be used uninitialized [-Wmaybe-uninitialized]
+ 1261 |     return (period);
+      |            ^
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:1159:14: note: 'period' was declared here
+ 1159 |     uint32_t period;
+      |              ^~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c: In function 'TM41_Get_PulseWidth':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:1374:12: warning: 'width' may be used uninitialized [-Wmaybe-uninitialized]
+ 1374 |     return (width);
+      |            ^
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\tim4.c:1272:14: note: 'width' was declared here
+ 1272 |     uint32_t width;
+      |              ^~~~~
+[ 21%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/StdDriver/src/gpio.c.obj
+[ 26%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/StdDriver/src/sci.c.obj
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c: In function 'SPI20_MasterReceive':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c:2919:15: warning: value computed is not used [-Wunused-value]
+ 2919 |         rx_buf[--rx_num];
+      |         ~~~~~~^~~~~~~~~~
+In file included from C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c:21:
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h: At top level:
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:544:13: warning: 'uart0_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  544 | static void uart0_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:545:13: warning: 'uart0_callback_softwareoverrun' declared 'static' but never defined [-Wunused-function]
+  545 | static void uart0_callback_softwareoverrun(uint16_t rx_data);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:546:13: warning: 'uart0_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  546 | static void uart0_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:547:13: warning: 'uart0_callback_error' declared 'static' but never defined [-Wunused-function]
+  547 | static void uart0_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:548:13: warning: 'spi00_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  548 | static void spi00_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:549:13: warning: 'spi00_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  549 | static void spi00_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:550:13: warning: 'spi00_callback_error' declared 'static' but never defined [-Wunused-function]
+  550 | static void spi00_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:551:13: warning: 'spi01_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  551 | static void spi01_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:552:13: warning: 'spi01_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  552 | static void spi01_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:553:13: warning: 'spi01_callback_error' declared 'static' but never defined [-Wunused-function]
+  553 | static void spi01_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:554:13: warning: 'iic00_callback_master_receiveend' declared 'static' but never defined [-Wunused-function]
+  554 | static void iic00_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:555:13: warning: 'iic00_callback_master_sendend' declared 'static' but never defined [-Wunused-function]
+  555 | static void iic00_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:556:13: warning: 'iic00_callback_master_error' declared 'static' but never defined [-Wunused-function]
+  556 | static void iic00_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:557:13: warning: 'iic01_callback_master_receiveend' declared 'static' but never defined [-Wunused-function]
+  557 | static void iic01_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:558:13: warning: 'iic01_callback_master_sendend' declared 'static' but never defined [-Wunused-function]
+  558 | static void iic01_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:559:13: warning: 'iic01_callback_master_error' declared 'static' but never defined [-Wunused-function]
+  559 | static void iic01_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:560:13: warning: 'uart1_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  560 | static void uart1_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:561:13: warning: 'uart1_callback_softwareoverrun' declared 'static' but never defined [-Wunused-function]
+  561 | static void uart1_callback_softwareoverrun(uint16_t rx_data);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:562:13: warning: 'uart1_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  562 | static void uart1_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:563:13: warning: 'uart1_callback_error' declared 'static' but never defined [-Wunused-function]
+  563 | static void uart1_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:564:13: warning: 'spi10_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  564 | static void spi10_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:565:13: warning: 'spi10_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  565 | static void spi10_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:566:13: warning: 'spi10_callback_error' declared 'static' but never defined [-Wunused-function]
+  566 | static void spi10_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:567:13: warning: 'spi11_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  567 | static void spi11_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:568:13: warning: 'spi11_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  568 | static void spi11_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:569:13: warning: 'spi11_callback_error' declared 'static' but never defined [-Wunused-function]
+  569 | static void spi11_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:570:13: warning: 'iic10_callback_master_receiveend' declared 'static' but never defined [-Wunused-function]
+  570 | static void iic10_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:571:13: warning: 'iic10_callback_master_sendend' declared 'static' but never defined [-Wunused-function]
+  571 | static void iic10_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:572:13: warning: 'iic10_callback_master_error' declared 'static' but never defined [-Wunused-function]
+  572 | static void iic10_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:573:13: warning: 'iic11_callback_master_receiveend' declared 'static' but never defined [-Wunused-function]
+  573 | static void iic11_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:574:13: warning: 'iic11_callback_master_sendend' declared 'static' but never defined [-Wunused-function]
+  574 | static void iic11_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:575:13: warning: 'iic11_callback_master_error' declared 'static' but never defined [-Wunused-function]
+  575 | static void iic11_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:576:13: warning: 'uart2_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  576 | static void uart2_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:577:13: warning: 'uart2_callback_softwareoverrun' declared 'static' but never defined [-Wunused-function]
+  577 | static void uart2_callback_softwareoverrun(uint16_t rx_data);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:578:13: warning: 'uart2_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  578 | static void uart2_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:579:13: warning: 'uart2_callback_error' declared 'static' but never defined [-Wunused-function]
+  579 | static void uart2_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:580:13: warning: 'spi20_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  580 | static void spi20_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:581:13: warning: 'spi20_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  581 | static void spi20_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:582:13: warning: 'spi20_callback_error' declared 'static' but never defined [-Wunused-function]
+  582 | static void spi20_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:583:13: warning: 'spi21_callback_receiveend' declared 'static' but never defined [-Wunused-function]
+  583 | static void spi21_callback_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:584:13: warning: 'spi21_callback_sendend' declared 'static' but never defined [-Wunused-function]
+  584 | static void spi21_callback_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:585:13: warning: 'spi21_callback_error' declared 'static' but never defined [-Wunused-function]
+  585 | static void spi21_callback_error(uint8_t err_type);
+      |             ^~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:586:13: warning: 'iic20_callback_master_receiveend' declared 'static' but never defined [-Wunused-function]
+  586 | static void iic20_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:587:13: warning: 'iic20_callback_master_sendend' declared 'static' but never defined [-Wunused-function]
+  587 | static void iic20_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:588:13: warning: 'iic20_callback_master_error' declared 'static' but never defined [-Wunused-function]
+  588 | static void iic20_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:589:13: warning: 'iic21_callback_master_receiveend' declared 'static' but never defined [-Wunused-function]
+  589 | static void iic21_callback_master_receiveend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:590:13: warning: 'iic21_callback_master_sendend' declared 'static' but never defined [-Wunused-function]
+  590 | static void iic21_callback_master_sendend(void);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\inc/sci.h:591:13: warning: 'iic21_callback_master_error' declared 'static' but never defined [-Wunused-function]
+  591 | static void iic21_callback_master_error(MD_STATUS flag);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c: In function 'UART_BaudRateCal':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c:221:20: warning: 'j_record' may be used uninitialized [-Wmaybe-uninitialized]
+  221 |        pvalue->sdr = j_record;
+      |        ~~~~~~~~~~~~^~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c:185:28: note: 'j_record' was declared here
+  185 |     unsigned char i_record,j_record;
+      |                            ^~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c:220:20: warning: 'i_record' may be used uninitialized [-Wmaybe-uninitialized]
+  220 |        pvalue->prs = i_record;
+      |        ~~~~~~~~~~~~^~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\StdDriver\src\sci.c:185:19: note: 'i_record' was declared here
+  185 |     unsigned char i_record,j_record;
+      |                   ^~~~~~~~
+[ 26%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/StdDriver/src/flash.c.obj
+[ 26%] Building C object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/Device/Cmsemicon/CMS32L051/Source/system_CMS32L051.c.obj
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\Device\Cmsemicon\CMS32L051\Source\system_CMS32L051.c: In function 'CLK_GetHocoFreq':
+C:\Users\matia\Documents\cheali-charger\src\hardware\cms32-CMS32L051\cpu\CMSIS\Device\Cmsemicon\CMS32L051\Source\system_CMS32L051.c:180:23: warning: array subscript 0 is outside array bounds of 'uint8_t[0]' {aka 'unsigned char[]'} [-Warray-bounds=]
+  180 |   uint8_t  frqsel  = (*(uint8_t *)0x000000C2U);
+      |                      ~^~~~~~~~~~~~~~~~~~~~~~~~
+cc1.exe: note: source object is likely at address zero
+[ 26%] Building ASM object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/cpu/CMSIS/Device/Cmsemicon/CMS32L051/Source/GCC/startup_CMS32L051.S.obj
+[ 31%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/AnalogInputs.cpp.obj
+[ 31%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/ChealiCharger2.cpp.obj
+[ 31%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/eeprom.cpp.obj
+C:\Users\matia\Documents\cheali-charger\src\core\eeprom.cpp: In function 'uint8_t eeprom::testOrRestore(uint8_t)':
+C:\Users\matia\Documents\cheali-charger\src\core\eeprom.cpp:53:38: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   53 |         if(testOrRestore((uint16_t*) &data.architecture, CHEALI_CHARGER_ARCHITECTURE, restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
+      |                                      ^~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\core\eeprom.cpp:54:38: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   54 |         if(testOrRestore((uint16_t*) &data.architectureInfo, CHEALI_CHARGER_ARCHITECTURE_INFO, restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
+      |                                      ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\core\eeprom.cpp:56:26: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   56 |         if(testOrRestore(&data.calibrationVersion, CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION, restore & EEPROM_RESTORE_CALIBRATION))    test |= EEPROM_RESTORE_CALIBRATION;
+      |                          ^~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\core\eeprom.cpp:57:26: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   57 |         if(testOrRestore(&data.programDataVersion, CHEALI_CHARGER_EEPROM_PROGRAMDATA_VERSION, restore & EEPROM_RESTORE_PROGRAM_DATA))   test |= EEPROM_RESTORE_PROGRAM_DATA;
+      |                          ^~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\core\eeprom.cpp:58:26: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   58 |         if(testOrRestore(&data.settingVersion, CHEALI_CHARGER_EEPROM_SETTINGS_VERSION, restore & EEPROM_RESTORE_SETTINGS))              test |= EEPROM_RESTORE_SETTINGS;
+      |                          ^~~~~~~~~~~~~~~~~~~~
+[ 31%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/Program.cpp.obj
+[ 36%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/Settings.cpp.obj
+C:\Users\matia\Documents\cheali-charger\src\core\Settings.cpp: In static member function 'static void Settings::load()':
+C:\Users\matia\Documents\cheali-charger\src\core\Settings.cpp:94:28: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   94 |     eeprom::read(settings, &eeprom::data.settings);
+      |                            ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\core\Settings.cpp: In static member function 'static void Settings::save()':
+C:\Users\matia\Documents\cheali-charger\src\core\Settings.cpp:99:19: warning: taking address of packed member of 'eeprom::Data' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   99 |     eeprom::write(&eeprom::data.settings, settings);
+      |                   ^~~~~~~~~~~~~~~~~~~~~~
+[ 36%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/Utils.cpp.obj
+[ 36%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/ProgramData.cpp.obj
+[ 36%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/ProgramDCcycle.cpp.obj
+[ 42%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/AnalogInputsTypes.cpp.obj
+[ 42%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/Balancer.cpp.obj
+[ 42%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/SimpleChargeStrategy.cpp.obj
+[ 42%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/Strategy.cpp.obj
+[ 47%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/TheveninDischargeStrategy.cpp.obj
+[ 47%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/Discharger.cpp.obj
+[ 47%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/StartInfoStrategy.cpp.obj
+[ 47%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/DelayStrategy.cpp.obj
+[ 52%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/SimpleDischargeStrategy.cpp.obj
+[ 52%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/TheveninChargeStrategy.cpp.obj
+[ 52%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/Monitor.cpp.obj
+[ 52%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/StorageStrategy.cpp.obj
+[ 57%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/TheveninMethod.cpp.obj
+[ 57%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/DeltaChargeStrategy.cpp.obj
+[ 57%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/SMPS.cpp.obj
+[ 57%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strategy/Thevenin.cpp.obj
+[ 63%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/calibration/Calibration.cpp.obj
+[ 63%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/calibration/CalibrationMenus.cpp.obj
+[ 63%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/calibration/CurrentCalibrationMenus.cpp.obj
+[ 63%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/EditMenu.cpp.obj
+[ 68%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/Menu.cpp.obj
+[ 68%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/OptionsMenu.cpp.obj
+[ 68%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/ProgramDataMenu.cpp.obj
+C:\Users\matia\Documents\cheali-charger\src\core\menus\ProgramDataMenu.cpp: In function 'void ProgramDataMenu::changeVoltage(int)':
+C:\Users\matia\Documents\cheali-charger\src\core\menus\ProgramDataMenu.cpp:75:24: warning: taking address of packed member of 'ProgramData::Battery' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   75 |     changeMinToMaxStep(&battery.cells, dir, 1, getMaxCells(), 1);
+      |                        ^~~~~~~~~~~~~~
+C:\Users\matia\Documents\cheali-charger\src\core\menus\ProgramDataMenu.cpp: At global scope:
+C:\Users\matia\Documents\cheali-charger\src\core\menus\ProgramDataMenu.cpp:78:69: warning: taking address of packed member of 'ProgramData::Battery' may result in an unaligned pointer value [-Waddress-of-packed-member]
+   78 | const cprintf::ArrayData batteryTypeData  PROGMEM = {batteryString, &battery.type};
+      |                                                                     ^~~~~~~~~~~~~
+[ 68%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/ProgramMenus.cpp.obj
+[ 73%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/SettingsMenu.cpp.obj
+[ 73%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/menus/MainMenu.cpp.obj
+[ 73%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/screens/ScreenBalancer.cpp.obj
+[ 73%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/screens/Screen.cpp.obj
+[ 78%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/screens/ScreenMethods.cpp.obj
+[ 78%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/screens/ScreenStartInfo.cpp.obj
+[ 78%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/screens/ScreenCycle.cpp.obj
+[ 78%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/screens/ScreenEditable.cpp.obj
+[ 84%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/cprintf.cpp.obj
+[ 84%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/Blink.cpp.obj
+[ 84%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/Buzzer.cpp.obj
+[ 84%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/Time.cpp.obj
+[ 89%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/Keyboard.cpp.obj
+[ 89%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/LcdPrint.cpp.obj
+[ 89%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/LiquidCrystal.cpp.obj
+[ 89%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/PolarityCheck.cpp.obj
+[ 94%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/drivers/SerialLog.cpp.obj
+[ 94%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/strings/strings.cpp.obj
+[ 94%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/helper/AnalogInputsAnalyzer.cpp.obj
+[ 94%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/helper/BalancePortAnalyzer.cpp.obj
+[100%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/helper/helperMain.cpp.obj
+[100%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/helper/LCDAnalyzer.cpp.obj
+[100%] Building CXX object src/hardware/cms32-CMS32L051/targets/imaxB6-clone-cms32/CMakeFiles/imaxB6-clone-cms32_cms32-CMS32L051.dir/__/__/__/__/core/helper/ADCKeyboardAnalyzer.cpp.obj
+[100%] Linking CXX executable imaxB6-clone-cms32_cms32-CMS32L051
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-closer.o): in function `_close_r':
+closer.c:(.text._close_r+0xc): warning: _close is not implemented and will always fail
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-closer.o): note: the message above does not take linker garbage collection into account
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-lseekr.o): in function `_lseek_r':
+lseekr.c:(.text._lseek_r+0x10): warning: _lseek is not implemented and will always fail
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-lseekr.o): note: the message above does not take linker garbage collection into account
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-readr.o): in function `_read_r':
+readr.c:(.text._read_r+0x10): warning: _read is not implemented and will always fail
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-readr.o): note: the message above does not take linker garbage collection into account
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-writer.o): in function `_write_r':
+writer.c:(.text._write_r+0x10): warning: _write is not implemented and will always fail
+C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/bin/ld.exe: C:/Program Files (x86)/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/15.2.1/../../../../arm-none-eabi/lib/thumb/v6-m/nofp\libc.a(libc_a-writer.o): note: the message above does not take linker garbage collection into account
+[100%] Built target imaxB6-clone-cms32_cms32-CMS32L051
