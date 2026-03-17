@@ -38,6 +38,7 @@ void LogDebug_run() __attribute__((weak));
 void LogDebug_run()
 {}
 
+#undef CRC
 namespace SerialLog {
     enum State { On, Off, Starting };
     uint32_t startTime;
