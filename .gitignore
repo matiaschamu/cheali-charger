@@ -22,3 +22,5 @@ Makefile
 cmake_install.cmake
 src/core/Version.h
 build_ubuntu.sh
+build-arm-cms32/
+.claude/
