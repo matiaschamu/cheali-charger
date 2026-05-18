@@ -27,12 +27,10 @@ namespace Utils
         );
     }
 
-    // This method should be only used by the LCD.
+    // Calibrated for 48 MHz core clock: the `subs/bne` loop runs at
+    // ~3 cycles/iteration on Cortex-M0+, so 16 iterations ≈ 1 µs.
     void delayMicroseconds(uint16_t value)
     {
-        uint32_t x = value;
-        x *= 26982;
-        x /= 4096;
-        Delay(x);
+        Delay((uint32_t)value * 16u);
     }
 }
