@@ -188,10 +188,13 @@ void initialize()
     /* Power-on the ADC (analog comparator). Must come after configuration. */
     ADC->ADM0 |= ADCE;
 
-    /* NVIC */
+    /* NVIC + INTC (CMS32L051 needs both — vendor INTC mask must be cleared) */
+    INTC_DisableIRQ(ADC_IRQn);
+    INTC_ClearPendingIRQ(ADC_IRQn);
     NVIC_ClearPendingIRQ((IRQn_Type)ADC_IRQn);
     NVIC_SetPriority((IRQn_Type)ADC_IRQn, ADC_IRQ_PRIORITY);
     NVIC_EnableIRQ((IRQn_Type)ADC_IRQn);
+    INTC_EnableIRQ(ADC_IRQn);
 
     /* Kick off the loop. */
     current_input_  = 0;
@@ -247,8 +250,8 @@ extern "C" void IRQ21_Handler(void)
         ADC->ADM0 |= ADCS;
     }
 
-    /* Hardware auto-clears ADIF on read of ADCR for some Cmsemicon parts; do it
-     * explicitly via the INTC pending-clear for portability. */
+    /* Clear pending on BOTH controllers (CMS32L051 has INTC + Cortex-M NVIC). */
+    INTC_ClearPendingIRQ(ADC_IRQn);
     NVIC_ClearPendingIRQ((IRQn_Type)ADC_IRQn);
 }
 
