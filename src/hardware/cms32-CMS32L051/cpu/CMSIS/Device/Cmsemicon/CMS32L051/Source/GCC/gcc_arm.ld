@@ -52,6 +52,9 @@ SECTIONS
 		__Vectors_Size = __Vectors_End - __Vectors;
 		__end__ = .;
 
+		/* User option bytes at 0xC0-0xC3, immediately after the 48-entry vector table. */
+		KEEP(*(.ARM.__AT_0x000000C0))
+
 		*(.text*)
 
 		KEEP(*(.init))
