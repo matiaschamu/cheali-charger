@@ -1,8 +1,9 @@
 /* Linker script to configure memory regions. */
 MEMORY
 {
-  FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 0x10000   /* 64k */
-  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x02000   /*  8k */
+  FLASH  (rx) : ORIGIN = 0x00000000, LENGTH = 0xFC00    /* 63 KB code     */
+  EEPROM (r)  : ORIGIN = 0x0000FC00, LENGTH = 0x0400    /*  1 KB shadow   */
+  RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 0x02000   /*  8 KB SRAM     */
 }
 
 /* Library configurations */
@@ -196,4 +197,13 @@ SECTIONS
 
 	/* Check if data + heap + stack exceeds RAM limit */
 	ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed with stack")
+
+	/* EEPROM emulation shadow: last 1 KB of flash.
+	 * NOLOAD so it isn't included in the .bin (firmware updates won't touch it). */
+	.eeprom_shadow (NOLOAD) :
+	{
+		__eeprom_shadow_start = .;
+		. = . + 0x400;
+		__eeprom_shadow_end = .;
+	} > EEPROM
 }
