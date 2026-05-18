@@ -57,9 +57,16 @@ namespace eeprom {
 
     void write_impl(uint8_t * addressE, const uint8_t * data, int size);
 
+    /*
+     * Cortex-M0+ does not support unaligned halfword/word loads. The core
+     * code casts `char*` to `uint16_t*` (e.g. eeprom.cpp:51), so dereferencing
+     * directly would HardFault. memcpy is alignment-safe.
+     */
     template<class Type>
     static Type read(const Type * addressE) {
-        return  *addressE;
+        Type t;
+        std::memcpy(&t, addressE, sizeof(Type));
+        return t;
     }
     template<class Type>
     static void read(Type &t, const Type * addressE) {
