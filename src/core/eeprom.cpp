@@ -135,4 +135,8 @@ namespace eeprom {
     }
 #endif
 
+    /* Weak default — ports that need to load eeprom::data from flash at boot
+     * (e.g. CMS32L051) override this. */
+    __attribute__((weak)) void initFromFlash() { /* no-op */ }
+
 }

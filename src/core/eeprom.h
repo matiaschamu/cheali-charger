@@ -52,6 +52,11 @@ namespace eeprom {
 
     extern Data data;
 
+    /* HW-specific: copy persistent shadow into eeprom::data. No-op on AVR
+     * (where eeprom::data lives in actual EEPROM); on ARM ports with flash
+     * emulation it must be called once at boot before Settings::load(). */
+    void initFromFlash();
+
 #ifdef ENABLE_EEPROM_CRC
     bool restoreCalibrationCRC(bool restore = true);
     bool restoreProgramDataCRC(bool restore = true);

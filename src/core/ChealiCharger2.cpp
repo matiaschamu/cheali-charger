@@ -39,6 +39,8 @@ void setup()
     hardware::initializePins();
     cpu::init();
 
+    eeprom::initFromFlash();   /* port-specific; no-op on AVR */
+
     hardware::initialize();
     Time::initialize();
     SMPS::initialize();
