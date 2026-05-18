@@ -1,1 +1,1 @@
-add_subdirectory(targets/imaxB6-cms32L051)
+add_subdirectory(targets/imaxB6-80W-cms32L051)

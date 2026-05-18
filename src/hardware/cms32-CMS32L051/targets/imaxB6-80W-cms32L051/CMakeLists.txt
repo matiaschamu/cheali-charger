@@ -1,5 +1,5 @@
 
-set(hardware imaxB6-cms32L051)
+set(hardware imaxB6-80W-cms32L051)
 
 set(SOURCE_FILES
     defaultCalibration.cpp
