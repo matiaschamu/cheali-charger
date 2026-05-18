@@ -64,45 +64,50 @@
  * Analog inputs  (TODO: verify schematic — placeholder ports chosen to
  * avoid collision with the confirmed LCD/button/buzzer pins above)
  * ----------------------------------------------------------------------- */
-#define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7, 2)   /* TODO: verify (P72) */
-#define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7, 3)   /* TODO: verify (P73) */
-#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7, 4)   /* TODO: verify (P74) */
-#define V_IN_PIN                        CMS32_PIN(7, 5)   /* TODO: verify (P75) */
-#define SMPS_CURRENT_PIN                CMS32_PIN(6, 3)   /* TODO: verify (P63) */
+#define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7,  4)  /* P74        – Vout−   ANI33 */
+#define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7,  5)  /* P75        – Vout+   ANI34 */
+#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73        – Idis    ANI32 */
+#define V_IN_PIN                        CMS32_PIN(6,  2)  /* P62        – Vin     ANI27 */
+#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* P136 = Q36 – Ismps   ANI36 */
 
 /* -----------------------------------------------------------------------
  * UART (debug serial)  (TODO: verify schematic)
  * ----------------------------------------------------------------------- */
 #define UART_TX_PIN                     CMS32_PIN(5, 1)   /* TODO: P51 = TXD0 default */
-#define T_EXTERNAL_PIN                  CMS32_PIN(2, 5)   /* TODO: verify */
+#define T_EXTERNAL_PIN                  CMS32_PIN(6,  3)  /* P63        – NTC ext ANI28 */
 
 /* -----------------------------------------------------------------------
  * Balancer load switches  (TODO: verify schematic)
  * ----------------------------------------------------------------------- */
-#define BALANCER1_LOAD_PIN              CMS32_PIN(6, 0)   /* TODO: verify */
-#define BALANCER2_LOAD_PIN              CMS32_PIN(6, 1)   /* TODO: verify */
-#define BALANCER3_LOAD_PIN              CMS32_PIN(6, 2)   /* TODO: verify */
-#define BALANCER4_LOAD_PIN              CMS32_PIN(6, 3)   /* TODO: verify */
-#define BALANCER5_LOAD_PIN              CMS32_PIN(7, 0)   /* TODO: verify */
-#define BALANCER6_LOAD_PIN              CMS32_PIN(7, 1)   /* TODO: verify */
+#define BALANCER1_LOAD_PIN              CMS32_PIN(1,  3)  /* P13        – cell 1 discharge */
+#define BALANCER2_LOAD_PIN              CMS32_PIN(1,  2)  /* P12        – cell 2 discharge */
+#define BALANCER3_LOAD_PIN              CMS32_PIN(1,  1)  /* P11        – cell 3 discharge */
+#define BALANCER4_LOAD_PIN              CMS32_PIN(12, 2)  /* P122 = Q22 – cell 4 discharge */
+#define BALANCER5_LOAD_PIN              CMS32_PIN(12, 3)  /* P123 = Q23 – cell 5 discharge */
+#define BALANCER6_LOAD_PIN              CMS32_PIN(12, 1)  /* P121 = Q21 – cell 6 discharge */
 
 /* -----------------------------------------------------------------------
- * Analog multiplexer address lines  (TODO: verify schematic)
+ * Balancer cell voltage ADC inputs (direct, no multiplexer)
+ * Vb0 = VBATT− reference, Vb6 = VBATT+ (absolute voltages; firmware
+ * computes per-cell voltage as Vb_N − Vb_(N-1)).
  * ----------------------------------------------------------------------- */
-#define MUX_ADR0_PIN                    CMS32_PIN(5, 0)   /* TODO: verify */
-#define MUX_ADR1_PIN                    CMS32_PIN(5, 1)   /* TODO: verify */
-#define MUX_ADR2_PIN                    CMS32_PIN(5, 2)   /* TODO: verify */
-#define MUX0_Z_D_PIN                    CMS32_PIN(5, 3)   /* TODO: verify */
+#define BALANSER0_PIN                   CMS32_PIN(3, 1)   /* P31  – Vb0 (VBATT−) ANI22 */
+#define BALANSER1_PIN                   CMS32_PIN(1, 4)   /* P14  – Vb1           ANI17 */
+#define BALANSER2_PIN                   CMS32_PIN(1, 7)   /* P17  – Vb2           ANI20 */
+#define BALANSER3_PIN                   CMS32_PIN(3, 0)   /* P30  – Vb3           ANI21 */
+#define BALANSER4_PIN                   CMS32_PIN(7, 0)   /* P70  – Vb4           ANI29 */
+#define BALANSER5_PIN                   CMS32_PIN(7, 1)   /* P71  – Vb5           ANI30 */
+#define BALANSER6_PIN                   CMS32_PIN(7, 2)   /* P72  – Vb6 (VBATT+)  ANI31 */
 
 /* -----------------------------------------------------------------------
  * SMPS / charge / discharge control  (TODO: verify schematic)
  * ----------------------------------------------------------------------- */
-#define OUTPUT_DISABLE_PIN              CMS32_PIN(1, 1)   /* TODO: verify */
-#define DISCHARGE_DISABLE_PIN           CMS32_PIN(1, 2)   /* TODO: verify */
-#define SMPS_DISABLE_PIN                CMS32_PIN(1, 3)   /* TODO: verify */
-#define DISCHARGE_VALUE_PIN             CMS32_PIN(1, 4)   /* TODO: verify */
-#define SMPS_VALUE_BOOST_PIN            CMS32_PIN(1, 4)   /* TODO: same as DISCHARGE_VALUE_PIN */
-#define SMPS_VALUE_BUCK_PIN             CMS32_PIN(1, 5)   /* TODO: verify */
+#define OUTPUT_DISABLE_PIN              CMS32_PIN(0,  0)  /* P00 – disable output    */
+#define DISCHARGE_DISABLE_PIN           CMS32_PIN(2,  0)  /* P20 – disable discharge */
+#define SMPS_DISABLE_PIN                CMS32_PIN(2, 3)   /* TODO: verify schematic */
+#define DISCHARGE_VALUE_PIN             CMS32_PIN(2, 4)   /* TODO: verify schematic */
+#define SMPS_VALUE_BOOST_PIN            CMS32_PIN(2, 6)   /* TODO: verify schematic */
+#define SMPS_VALUE_BUCK_PIN             CMS32_PIN(2, 1)   /* TODO: verify schematic */
 
 /* -----------------------------------------------------------------------
  * Hardware serial alternate pins  (TODO: verify schematic)
@@ -118,6 +123,8 @@
 
 /* -----------------------------------------------------------------------
  * Analog multiplexer input addresses
+ * Not used: this hardware connects cell voltages directly to ADC.
+ * Kept as stubs so generic code that references them still compiles.
  * ----------------------------------------------------------------------- */
 #define MADDR_V_BALANSER_BATT_MINUS     0
 #define MADDR_V_BALANSER1               1
