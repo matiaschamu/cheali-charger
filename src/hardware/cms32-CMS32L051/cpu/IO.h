@@ -2,84 +2,60 @@
     cheali-charger - open source firmware for a variety of LiPo chargers
     Copyright (C) 2014 Paweł Stawicki. All right reserved.
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Licensed under the GPLv3.
 */
-
-// CMS32L051 stub: no-op GPIO layer. All functions compile and link, but do
-// nothing in hardware. Replace bodies with real CMS32L051 GPIO driver calls.
 
 #ifndef IO_H_
 #define IO_H_
 
 #include <stdint.h>
 
-#define OUTPUT                 0
-#define INPUT                  1
-#define ANALOG_INPUT           200
-#define ANALOG_INPUT_DISCHARGE 201
+/*
+ * CMS32L051 pin encoding
+ *
+ * A single uint8_t encodes both port and bit:
+ *   encoded = port * 8 + bit
+ *
+ * Valid ports: 0-7, 12, 13, 14.  All encoded values ≤ 119 < 128.
+ * Values ≥ 128 are reserved for virtual/internal pins (e.g. T_INTERNAL_PIN).
+ *
+ * Usage in imaxB6-pins.h:
+ *   #define MY_PIN   CMS32_PIN(3, 0)   // P30
+ */
+#define CMS32_PIN(port, bit)   ((uint8_t)((uint8_t)(port) * 8u + (uint8_t)(bit)))
+
+/* cheali-charger mode constants — intentionally different numeric values from
+ * the vendor gpio.h PIN_ModeDef enum (which uses OUTPUT=4, INPUT=0).
+ * The translation happens inside IO.cpp. */
+#define OUTPUT                  0
+#define INPUT                   1
+#define ANALOG_INPUT            200
+#define ANALOG_INPUT_DISCHARGE  201
 #define HIGH 1
 #define LOW  0
 
-// Compatibility token referenced from a Nuvoton-era code path in TxSoftSerial.
+/* Compatibility: some shared code references this after including IO.h */
 #define GPIO_PMD_OUTPUT 0
-
-#define INLINE_ATTR __attribute__((always_inline))
 
 namespace IO
 {
-    // Storage backing the pin pseudo-address table. One word per pin number.
-    // Real implementation should map pinNumber -> port/bit and access the
-    // CMS32L051 GPIO peripheral.
-    extern volatile uint32_t _pin_storage[256];
+    /* Configure pin direction/mode.
+     * mode: OUTPUT(0), INPUT(1), ANALOG_INPUT(200/201) */
+    void pinMode(uint8_t pinNumber, uint8_t mode);
 
-    inline volatile uint32_t * getPinAddress_(uint8_t pinNumber) INLINE_ATTR;
-    inline uint32_t getPinBit_(volatile uint32_t * pinAddress) INLINE_ATTR;
-    inline uint32_t getADCChannel(uint8_t pinNumber) INLINE_ATTR;
-    inline void digitalWrite(uint8_t pinNumber, uint32_t value) INLINE_ATTR;
-    inline uint8_t digitalRead(uint8_t pinNumber) INLINE_ATTR;
-    inline void enableFuncADC(uint32_t adc) INLINE_ATTR;
-    inline void disableFuncADC(uint32_t adc) INLINE_ATTR;
-    inline void pinMode(uint8_t pinNumber, uint8_t mode) INLINE_ATTR;
+    /* Drive a digital output high (value != 0) or low (value == 0). */
+    void digitalWrite(uint8_t pinNumber, uint32_t value);
 
-    inline volatile uint32_t * getPinAddress_(uint8_t pinNumber) {
-        return &_pin_storage[pinNumber];
-    }
+    /* Read the current logic level of a pin. */
+    uint8_t digitalRead(uint8_t pinNumber);
 
-    inline uint32_t getPinBit_(volatile uint32_t * pinAddress) {
-        return ((uintptr_t)pinAddress >> 2) & 7;
-    }
+    /* Return the ANI channel number for an analog-capable pin.
+     * Returns 0xFF if the pin has no ADC channel. */
+    uint8_t getADCChannel(uint8_t pinNumber);
 
-    inline uint32_t getADCChannel(uint8_t pinNumber) {
-        return getPinBit_(getPinAddress_(pinNumber));
-    }
-
-    inline void digitalWrite(uint8_t pinNumber, uint32_t value) {
-        _pin_storage[pinNumber] = value ? 1 : 0;
-    }
-
-    inline uint8_t digitalRead(uint8_t pinNumber) {
-        return (uint8_t) _pin_storage[pinNumber];
-    }
-
+    /* ADC function enable/disable stubs (full ADC init is in AnalogInputsADC.cpp). */
     inline void enableFuncADC(uint32_t /*adc*/)  {}
     inline void disableFuncADC(uint32_t /*adc*/) {}
-
-    void pinMode_(volatile uint32_t * pinAddress, uint8_t mode);
-
-    inline void pinMode(uint8_t pinNumber, uint8_t mode) {
-        pinMode_(getPinAddress_(pinNumber), mode);
-    }
 }
 
 #endif /* IO_H_ */
