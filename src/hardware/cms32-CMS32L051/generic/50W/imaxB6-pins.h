@@ -100,14 +100,31 @@
 #define BALANSER6_PIN                   CMS32_PIN(7, 2)   /* P72  – Vb6 (VBATT+)  ANI31 */
 
 /* -----------------------------------------------------------------------
- * SMPS / charge / discharge control  (TODO: verify schematic)
+ * SMPS / charge / discharge control
+ *
+ * Macro names are kept identical to the Nuvoton port for code compatibility
+ * but the roles on this board are different — see the per-line comments.
+ * Empirically verified on the imaxB6-80W (CMS32L051) hardware.
  * ----------------------------------------------------------------------- */
-#define OUTPUT_DISABLE_PIN              CMS32_PIN(0,  0)  /* P00 – disable output    */
-#define DISCHARGE_DISABLE_PIN           CMS32_PIN(2,  0)  /* P20 – disable discharge */
-#define SMPS_DISABLE_PIN                CMS32_PIN(2, 3)   /* TODO: verify schematic */
-#define DISCHARGE_VALUE_PIN             CMS32_PIN(2, 4)   /* TODO: verify schematic */
-#define SMPS_VALUE_BOOST_PIN            CMS32_PIN(2, 6)   /* TODO: verify schematic */
-#define SMPS_VALUE_BUCK_PIN             CMS32_PIN(2, 1)   /* TODO: verify schematic */
+/* OUTPUT_DISABLE_PIN — active-HIGH: HIGH = output path to battery cut.    */
+#define OUTPUT_DISABLE_PIN              CMS32_PIN(0,  0)  /* P00 */
+
+/* DISCHARGE_DISABLE_PIN — charger / discharger path select.
+ * HIGH = charger mode (discharge FET off), LOW = discharger mode.        */
+#define DISCHARGE_DISABLE_PIN           CMS32_PIN(2,  0)  /* P20 */
+
+/* SMPS_VALUE_BUCK_PIN — converter topology select (NOT a duty input on
+ * this board). LOW = buck, HIGH = boost. PWM duty is on P15 for both
+ * modes via TM41 → TO11.                                                  */
+#define SMPS_VALUE_BUCK_PIN             CMS32_PIN(2, 1)   /* P21 */
+
+/* Pins below are placeholders inherited from the Nuvoton port and are not
+ * actually wired to dedicated functions on this board (the single PWM on
+ * P15 covers both buck and boost). Left defined so generic SMPS code that
+ * references them still compiles. */
+#define SMPS_DISABLE_PIN                CMS32_PIN(2, 3)   /* unused on this board */
+#define DISCHARGE_VALUE_PIN             CMS32_PIN(2, 4)   /* unused on this board */
+#define SMPS_VALUE_BOOST_PIN            CMS32_PIN(2, 6)   /* unused on this board */
 
 /* -----------------------------------------------------------------------
  * Hardware serial alternate pins  (TODO: verify schematic)
