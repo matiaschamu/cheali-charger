@@ -22,6 +22,9 @@
 #include "HardwareConfigGeneric.h"
 #include "imaxB6-pins.h"
 
+/* Enable the manual buck-converter test menu (Options → buck test). */
+#define ENABLE_BUCK_TEST
+
 #define MAX_CHARGE_V            ANALOG_VOLT(27.000)
 #define MAX_CHARGE_I            ANALOG_AMP(5.000)
 #define MAX_CHARGE_P            ANALOG_WATT(50.000)

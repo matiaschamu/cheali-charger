@@ -70,6 +70,9 @@ namespace options {
     STRING(settings,        "settings");
     STRING(calibrate,       "calibrate");
     STRING(resetDefault,    "reset default");
+#ifdef ENABLE_BUCK_TEST
+    STRING(buckTest,        "buck test");
+#endif
 }
 
 namespace ProgramData {

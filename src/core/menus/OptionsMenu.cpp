@@ -22,6 +22,9 @@
 #include "Hardware.h"
 #include "eeprom.h"
 #include "memory.h"
+#ifdef ENABLE_BUCK_TEST
+#include "BuckTest.h"
+#endif
 
 using namespace options;
 
@@ -32,6 +35,9 @@ const Menu::StaticMenu optionsStaticMenu[] PROGMEM = {
 #endif
 #ifdef ENABLE_EEPROM_RESTORE_DEFAULT
         {string_resetDefault,   OptionsMenu::resetDefault },
+#endif
+#ifdef ENABLE_BUCK_TEST
+        {string_buckTest,       BuckTest::run     },
 #endif
         {NULL, NULL}
 };

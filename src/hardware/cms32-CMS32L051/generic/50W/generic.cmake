@@ -11,6 +11,9 @@ set(GENERIC_SOURCE
     outputPWM.cpp
     outputPWM.h
 
+    BuckTest.cpp
+    BuckTest.h
+
     Hardware.h
     HardwareConfigGeneric.h
 )
