@@ -30,8 +30,9 @@ extern uint8_t __eeprom_shadow_start[];
 
 namespace {
 
-constexpr uint32_t EEPROM_ADDR  = 0xFC00;
-constexpr uint32_t EEPROM_SIZE  = 0x0400;
+constexpr uint32_t EEPROM_ADDR    = 0xFC00;
+constexpr uint32_t EEPROM_SIZE    = 0x0400;     /* 1 KB shadow region   */
+constexpr uint32_t FLASH_SECTOR   = 0x0100;     /* CMS32L051 sector = 256 B */
 
 inline void fmc_wait_ovf() {
     while ((FMC->FLSTS & FMC_FLSTS_OVF_Msk) == 0) { /* spin */ }
@@ -63,7 +64,12 @@ void flash_program_byte(uint32_t addr, uint8_t value) {
 }
 
 void sync_to_flash() {
-    flash_erase_sector(EEPROM_ADDR);
+    /* eeprom::data is ~992 bytes; CMS32L051 sectors are 256 B, so the shadow
+     * spans up to EEPROM_SIZE/FLASH_SECTOR sectors. Each must be erased
+     * individually — flash bits only go 1→0 between erases. */
+    for (uint32_t off = 0; off < EEPROM_SIZE; off += FLASH_SECTOR) {
+        flash_erase_sector(EEPROM_ADDR + off);
+    }
     const uint8_t * src = reinterpret_cast<const uint8_t *>(&eeprom::data);
     const uint32_t n = sizeof(eeprom::data);
     for (uint32_t i = 0; i < n; i++) {
