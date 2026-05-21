@@ -44,7 +44,12 @@ proc cms32_chip_erase {} {
     echo "Chip erase done"
 }
 
-# Sector-erase a single 1 KB sector at the given address.
+# CMS32L051 flash sector size, in bytes. Empirically 256 (0x100); using a
+# larger step leaves gaps unerased and subsequent byte-program cannot turn
+# bits back on (flash bits can only go 1→0 between erases).
+set CMS32_SECTOR_SIZE 0x100
+
+# Sector-erase a single sector starting at the given address.
 proc cms32_sector_erase {addr} {
     global FMC_FLERMD FMC_FLPROT FMC_FLOPMD1 FMC_FLOPMD2
     mww $FMC_FLERMD  0x10
@@ -57,11 +62,12 @@ proc cms32_sector_erase {addr} {
     mww $FMC_FLPROT 0xF0
 }
 
-# Erase firmware sectors 0x0000..0xFBFF (63 sectors of 1 KB), preserving the
-# EEPROM-emulation shadow at 0xFC00..0xFFFF.
+# Erase firmware sectors 0x0000..0xFBFF, preserving the EEPROM-emulation
+# shadow that lives in the last 1 KB (0xFC00..0xFFFF).
 proc cms32_firmware_erase {} {
+    global CMS32_SECTOR_SIZE
     echo "Firmware erase (preserving EEPROM at 0xFC00)..."
-    for {set addr 0} {$addr < 0xFC00} {incr addr 0x400} {
+    for {set addr 0} {$addr < 0xFC00} {incr addr $CMS32_SECTOR_SIZE} {
         cms32_sector_erase $addr
     }
     echo "Firmware erase done"
@@ -77,7 +83,18 @@ proc cms32_write_byte {addr val} {
     mww $FMC_FLPROT 0xF0
 }
 
+# Same as cms32_write_byte but assumes FLPROT is already unlocked (0xF1).
+# Used in tight programming loops to halve the per-byte SWD overhead.
+proc cms32_write_byte_fast {addr val} {
+    global FMC_FLOPMD1 FMC_FLOPMD2
+    mww $FMC_FLOPMD1 0xAA
+    mww $FMC_FLOPMD2 0x55
+    mwb $addr $val
+    fmc_wait_ovf
+}
+
 proc cms32_program_bin {filename} {
+    global FMC_FLPROT
     set fp [open $filename rb]
     set data [read $fp]
     close $fp
@@ -85,9 +102,16 @@ proc cms32_program_bin {filename} {
     echo "Programming $len bytes..."
     set addr 0
     set pct_prev -1
+    set skipped 0
+    mww $FMC_FLPROT 0xF1    ;# unlock once for the whole batch
     for {set i 0} {$i < $len} {incr i} {
         set byte [scan [string index $data $i] %c]
-        cms32_write_byte $addr $byte
+        if {$byte == 0xFF} {
+            ;# Just-erased flash already reads 0xFF; skip the program cycle.
+            incr skipped
+        } else {
+            cms32_write_byte_fast $addr $byte
+        }
         incr addr
         set pct [expr {$i * 100 / $len}]
         if {$pct != $pct_prev} {
@@ -95,7 +119,8 @@ proc cms32_program_bin {filename} {
             set pct_prev $pct
         }
     }
-    echo "Programming done"
+    mww $FMC_FLPROT 0xF0
+    echo "Programming done ($skipped of $len bytes were 0xFF, skipped)"
 }
 
 proc cms32_flash {binfile} {
