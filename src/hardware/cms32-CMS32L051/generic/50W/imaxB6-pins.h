@@ -61,14 +61,17 @@
 #define BUTTON_START_PIN                CMS32_PIN(12, 4)  /* P124 = Q24 – ENTER */
 
 /* -----------------------------------------------------------------------
- * Analog inputs  (TODO: verify schematic — placeholder ports chosen to
- * avoid collision with the confirmed LCD/button/buzzer pins above)
+ * Analog inputs
+ *
+ * Confirmed pins are marked "verified"; the rest are placeholders kept
+ * to avoid collision with LCD/button/buzzer pins until each one is
+ * checked against the imaxB6-80W schematic.
  * ----------------------------------------------------------------------- */
-#define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7,  4)  /* P74        – Vout−   ANI33 */
-#define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7,  5)  /* P75        – Vout+   ANI34 */
-#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73        – Idis    ANI32 */
-#define V_IN_PIN                        CMS32_PIN(6,  2)  /* P62        – Vin     ANI27 */
-#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* P136 = Q36 – Ismps   ANI36 */
+#define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7,  4)  /* P74 – Vout−  ANI33  (verified) */
+#define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7,  5)  /* P75 – Vout+  ANI34  (verified) */
+#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73 – Idis   ANI32  TODO */
+#define V_IN_PIN                        CMS32_PIN(6,  2)  /* P62 – Vin    ANI27  TODO */
+#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* P136 – Ismps ANI36  TODO */
 
 /* -----------------------------------------------------------------------
  * UART (debug serial)  (TODO: verify schematic)
