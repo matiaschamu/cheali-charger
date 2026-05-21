@@ -44,6 +44,29 @@ proc cms32_chip_erase {} {
     echo "Chip erase done"
 }
 
+# Sector-erase a single 1 KB sector at the given address.
+proc cms32_sector_erase {addr} {
+    global FMC_FLERMD FMC_FLPROT FMC_FLOPMD1 FMC_FLOPMD2
+    mww $FMC_FLERMD  0x10
+    mww $FMC_FLPROT  0xF1
+    mww $FMC_FLOPMD1 0x55
+    mww $FMC_FLOPMD2 0xAA
+    mww $addr        0xFFFFFFFF
+    fmc_wait_ovf
+    mww $FMC_FLERMD 0x00
+    mww $FMC_FLPROT 0xF0
+}
+
+# Erase firmware sectors 0x0000..0xFBFF (63 sectors of 1 KB), preserving the
+# EEPROM-emulation shadow at 0xFC00..0xFFFF.
+proc cms32_firmware_erase {} {
+    echo "Firmware erase (preserving EEPROM at 0xFC00)..."
+    for {set addr 0} {$addr < 0xFC00} {incr addr 0x400} {
+        cms32_sector_erase $addr
+    }
+    echo "Firmware erase done"
+}
+
 proc cms32_write_byte {addr val} {
     global FMC_FLPROT FMC_FLOPMD1 FMC_FLOPMD2
     mww $FMC_FLPROT  0xF1
@@ -77,7 +100,7 @@ proc cms32_program_bin {filename} {
 
 proc cms32_flash {binfile} {
     halt
-    cms32_chip_erase
+    cms32_firmware_erase
     cms32_program_bin $binfile
     echo "Verifying..."
     verify_image $binfile 0x0 bin
