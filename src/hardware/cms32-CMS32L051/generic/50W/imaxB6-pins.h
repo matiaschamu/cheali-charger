@@ -61,36 +61,34 @@
 #define BUTTON_START_PIN                CMS32_PIN(12, 4)  /* P124 = Q24 – ENTER */
 
 /* -----------------------------------------------------------------------
- * Analog inputs
- *
- * Confirmed pins are marked "verified"; the rest are placeholders kept
- * to avoid collision with LCD/button/buzzer pins until each one is
- * checked against the imaxB6-80W schematic.
+ * Analog inputs — all verified against the imaxB6-80W schematic.
  * ----------------------------------------------------------------------- */
-#define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7,  4)  /* P74 – Vout−  ANI33  (verified) */
-#define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7,  5)  /* P75 – Vout+  ANI34  (verified) */
-#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73 – Idis   ANI32  TODO */
-#define V_IN_PIN                        CMS32_PIN(6,  2)  /* P62 – Vin    ANI27  TODO */
-#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* P136 – Ismps ANI36  TODO */
+#define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7,  4)  /* P74  – Vout−   ANI33 */
+#define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7,  5)  /* P75  – Vout+   ANI34 */
+#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73  – Idis    ANI32 */
+#define V_IN_PIN                        CMS32_PIN(6,  2)  /* P62  – Vin     ANI27 */
+#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* P136 – Ismps   ANI36 */
+#define T_EXTERNAL_PIN                  CMS32_PIN(6,  3)  /* P63  – NTC ext ANI28 */
 
 /* -----------------------------------------------------------------------
- * UART (debug serial)  (TODO: verify schematic)
+ * UART (debug serial) — verified.
  * ----------------------------------------------------------------------- */
-#define UART_TX_PIN                     CMS32_PIN(5, 1)   /* TODO: P51 = TXD0 default */
-#define T_EXTERNAL_PIN                  CMS32_PIN(6,  3)  /* P63        – NTC ext ANI28 */
+#define UART_TX_PIN                     CMS32_PIN(5, 1)   /* P51 – TXD0 */
+#define UART_RX_PIN                     CMS32_PIN(5, 0)   /* P50 – RXD0 */
 
 /* -----------------------------------------------------------------------
- * Balancer load switches  (TODO: verify schematic)
+ * Balancer load switches — verified.
+ * Gate of the per-cell discharge resistor. HIGH = bleed current ON.
  * ----------------------------------------------------------------------- */
-#define BALANCER1_LOAD_PIN              CMS32_PIN(1,  3)  /* P13        – cell 1 discharge */
-#define BALANCER2_LOAD_PIN              CMS32_PIN(1,  2)  /* P12        – cell 2 discharge */
-#define BALANCER3_LOAD_PIN              CMS32_PIN(1,  1)  /* P11        – cell 3 discharge */
-#define BALANCER4_LOAD_PIN              CMS32_PIN(12, 2)  /* P122 = Q22 – cell 4 discharge */
-#define BALANCER5_LOAD_PIN              CMS32_PIN(12, 3)  /* P123 = Q23 – cell 5 discharge */
-#define BALANCER6_LOAD_PIN              CMS32_PIN(12, 1)  /* P121 = Q21 – cell 6 discharge */
+#define BALANCER1_LOAD_PIN              CMS32_PIN(1,  3)  /* P13        – cell 1 */
+#define BALANCER2_LOAD_PIN              CMS32_PIN(1,  2)  /* P12        – cell 2 */
+#define BALANCER3_LOAD_PIN              CMS32_PIN(1,  1)  /* P11        – cell 3 */
+#define BALANCER4_LOAD_PIN              CMS32_PIN(12, 2)  /* P122 = Q22 – cell 4 */
+#define BALANCER5_LOAD_PIN              CMS32_PIN(12, 3)  /* P123 = Q23 – cell 5 */
+#define BALANCER6_LOAD_PIN              CMS32_PIN(12, 1)  /* P121 = Q21 – cell 6 */
 
 /* -----------------------------------------------------------------------
- * Balancer cell voltage ADC inputs (direct, no multiplexer)
+ * Balancer cell voltage ADC inputs (direct, no multiplexer) — verified.
  * Vb0 = VBATT− reference, Vb6 = VBATT+ (absolute voltages; firmware
  * computes per-cell voltage as Vb_N − Vb_(N-1)).
  * ----------------------------------------------------------------------- */
