@@ -109,6 +109,22 @@ void hardware::setBalancer(uint8_t v)
     IO::digitalWrite(BALANCER6_LOAD_PIN, v&32);
 }
 
+void hardware::setTopology(bool boost)
+{
+    /* SMPS_VALUE_BUCK_PIN = P21 is the topology selector on this board
+     * (NOT a duty pin — PWM duty lives on P15). LOW = buck, HIGH = boost. */
+    IO::pinMode(SMPS_VALUE_BUCK_PIN, OUTPUT);
+    IO::digitalWrite(SMPS_VALUE_BUCK_PIN, boost ? 1 : 0);
+}
+
+void hardware::setChargerMode(bool charging)
+{
+    /* DISCHARGE_DISABLE_PIN = P20 selects charger vs. discharger path:
+     * HIGH = charger (discharge FET off), LOW = discharger. */
+    IO::pinMode(DISCHARGE_DISABLE_PIN, OUTPUT);
+    IO::digitalWrite(DISCHARGE_DISABLE_PIN, charging ? 1 : 0);
+}
+
 void hardware::setExternalTemperatueOutput(bool enable)
 {
     if(enable) {

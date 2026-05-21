@@ -45,6 +45,19 @@ namespace hardware {
     void setDischargerValue(uint16_t value);
     void setVoutCutoff(AnalogInputs::ValueType v);
 
+    /* CMS32L051-port specific: manual control of the converter topology
+     * (P21) and the charger/discharger path select (P20). Currently not
+     * wired into the SMPS_PID / Strategy flow — exposed for diagnostic
+     * tooling and future integration.
+     *
+     *   setTopology(true)     → boost  (P21 HIGH)
+     *   setTopology(false)    → buck   (P21 LOW)
+     *   setChargerMode(true)  → charger path    (P20 HIGH)
+     *   setChargerMode(false) → discharger path (P20 LOW)
+     */
+    void setTopology(bool boost);
+    void setChargerMode(bool charging);
+
     void setBalancer(uint8_t balance);
     void doInterrupt();
 
