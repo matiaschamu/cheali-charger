@@ -175,6 +175,12 @@ void PORT_Init(PORT_TypeDef PORTx,PIN_TypeDef PINx,PIN_ModeDef MODEx)
 			*((volatile uint8_t*)(&PORT->PD0+PORTx)) &= ~pos;
 			break;
 		case ANALOG_INPUT:
+			/* Force PM=1 (input direction) before PMC=1 (analog mode).
+			 * This prevents a pin previously configured as OUTPUT from
+			 * retaining its digital output direction when analog mode is
+			 * selected. Physical ADC validation is still pending. */
+			*((volatile uint8_t*)(&PORT->PM0+PORTx))  |= pos;
+			*((volatile uint8_t*)(&PORT->POM0+PORTx)) &= ~pos;
 			*((volatile uint8_t*)(&PORT->PMC0+PORTx)) |= pos;
 			break;
 		case OUTPUT:

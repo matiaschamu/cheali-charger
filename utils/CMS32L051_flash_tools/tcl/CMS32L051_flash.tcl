@@ -13,6 +13,9 @@ set FMC_FLOPMD2 [expr {$FMC_BASE + 0x08}]
 set FMC_FLERMD  [expr {$FMC_BASE + 0x0C}]
 set FMC_FLPROT  [expr {$FMC_BASE + 0x20}]
 
+set CMS32_EEPROM_ADDR 0xFC00
+set CMS32_EEPROM_SIZE 0x0400
+
 proc fmc_wait_ovf {} {
     global FMC_FLSTS
     set tries 0
@@ -73,6 +76,16 @@ proc cms32_firmware_erase {} {
     echo "Firmware erase done"
 }
 
+proc cms32_eeprom_erase {} {
+    global CMS32_SECTOR_SIZE CMS32_EEPROM_ADDR CMS32_EEPROM_SIZE
+    set end [expr {$CMS32_EEPROM_ADDR + $CMS32_EEPROM_SIZE}]
+    echo "EEPROM shadow erase..."
+    for {set addr $CMS32_EEPROM_ADDR} {$addr < $end} {incr addr $CMS32_SECTOR_SIZE} {
+        cms32_sector_erase $addr
+    }
+    echo "EEPROM shadow erase done"
+}
+
 proc cms32_write_byte {addr val} {
     global FMC_FLPROT FMC_FLOPMD1 FMC_FLOPMD2
     mww $FMC_FLPROT  0xF1
@@ -93,14 +106,20 @@ proc cms32_write_byte_fast {addr val} {
     fmc_wait_ovf
 }
 
-proc cms32_program_bin {filename} {
+proc cms32_program_bin_at {filename base_addr max_len} {
     global FMC_FLPROT
+    if {![file exists $filename]} {
+        error "File not found: $filename"
+    }
     set fp [open $filename rb]
     set data [read $fp]
     close $fp
     set len [string length $data]
-    echo "Programming $len bytes..."
-    set addr 0
+    if {$len > $max_len} {
+        error [format "Image is too large: %d bytes (limit %d)" $len $max_len]
+    }
+    echo [format "Programming %d bytes at 0x%08X..." $len $base_addr]
+    set addr $base_addr
     set pct_prev -1
     set skipped 0
     mww $FMC_FLPROT 0xF1    ;# unlock once for the whole batch
@@ -123,12 +142,72 @@ proc cms32_program_bin {filename} {
     echo "Programming done ($skipped of $len bytes were 0xFF, skipped)"
 }
 
+proc cms32_program_bin {filename} {
+    global CMS32_EEPROM_ADDR
+    cms32_program_bin_at $filename 0x00000000 $CMS32_EEPROM_ADDR
+}
+
+proc cms32_check_eeprom_file {filename} {
+    global CMS32_EEPROM_SIZE
+    if {![file exists $filename]} {
+        error "EEPROM backup not found: $filename"
+    }
+    set len [file size $filename]
+    if {$len != $CMS32_EEPROM_SIZE} {
+        error [format "Invalid EEPROM backup size: %d bytes (expected %d)" $len $CMS32_EEPROM_SIZE]
+    }
+}
+
+proc cms32_eeprom_backup {filename} {
+    global CMS32_EEPROM_ADDR CMS32_EEPROM_SIZE
+    halt
+    dump_image $filename $CMS32_EEPROM_ADDR $CMS32_EEPROM_SIZE
+    cms32_check_eeprom_file $filename
+    echo "EEPROM backup saved to $filename"
+}
+
+proc cms32_eeprom_verify {filename} {
+    global CMS32_EEPROM_ADDR
+    cms32_check_eeprom_file $filename
+    halt
+    verify_image $filename $CMS32_EEPROM_ADDR bin
+    echo "EEPROM backup matches flash"
+}
+
+proc cms32_eeprom_restore {filename} {
+    global CMS32_EEPROM_ADDR CMS32_EEPROM_SIZE
+    cms32_check_eeprom_file $filename
+    halt
+    cms32_eeprom_erase
+    cms32_program_bin_at $filename $CMS32_EEPROM_ADDR $CMS32_EEPROM_SIZE
+    verify_image $filename $CMS32_EEPROM_ADDR bin
+    echo "EEPROM restore done - resetting"
+    reset run
+}
+
 proc cms32_flash {binfile} {
     halt
     cms32_firmware_erase
     cms32_program_bin $binfile
     echo "Verifying..."
     verify_image $binfile 0x0 bin
+    echo "Done - resetting"
+    reset run
+}
+
+# Recommended development workflow: snapshot the EEPROM shadow, update only
+# the firmware area, verify both images, then reset. If EEPROM verification
+# fails OpenOCD aborts before reset and the backup remains available for an
+# explicit cms32_eeprom_restore.
+proc cms32_flash_safe {binfile eepromfile} {
+    halt
+    cms32_eeprom_backup $eepromfile
+    cms32_firmware_erase
+    cms32_program_bin $binfile
+    echo "Verifying firmware..."
+    verify_image $binfile 0x0 bin
+    echo "Verifying preserved EEPROM..."
+    cms32_eeprom_verify $eepromfile
     echo "Done - resetting"
     reset run
 }

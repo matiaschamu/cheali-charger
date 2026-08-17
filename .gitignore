@@ -24,3 +24,4 @@ src/core/Version.h
 build_ubuntu.sh
 build-arm-cms32/
 .claude/
+local-backups/
