@@ -25,6 +25,9 @@
 #ifdef ENABLE_BUCK_TEST
 #include "BuckTest.h"
 #endif
+#ifdef ENABLE_ADC_TEST
+#include "AdcTest.h"
+#endif
 
 using namespace options;
 
@@ -38,6 +41,9 @@ const Menu::StaticMenu optionsStaticMenu[] PROGMEM = {
 #endif
 #ifdef ENABLE_BUCK_TEST
         {string_buckTest,       BuckTest::run     },
+#endif
+#ifdef ENABLE_ADC_TEST
+        {string_adcTest,        AdcTest::run      },
 #endif
         {NULL, NULL}
 };

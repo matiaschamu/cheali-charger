@@ -138,8 +138,9 @@ foto histórica, no reemplaza `git status` ni `git fetch`.
   GND común confirmado y no a nodos flotantes o conmutados.
 - ST-Link y OpenOCD están conectados. Existe backup del firmware original y
   datos de recuperación.
-- No se comprobó todavía persistencia de EEPROM ni el tamaño real de borrado
-  flash.
+- La EEPROM ya se preservó y verificó durante un flasheo completo. Sigue
+  pendiente resolver documentalmente la discrepancia del tamaño de sector de
+  borrado (256 bytes empíricos frente a 512 bytes del datasheet).
 - UART no se necesita y el conector/señales no son físicamente accesibles en
   este equipo. No priorizar su implementación.
 - Objetivo de largo plazo: funcionamiento completo y luego validación gradual
@@ -172,13 +173,13 @@ foto histórica, no reemplaza `git status` ni `git fetch`.
   que el período efectivo usa `TDR+1`, base de la compensación actual.
 - `[COMPILA]` EEPROM emulada en el último 1 KiB de flash (`0xFC00..0xFFFF`) y
   cargada al arrancar mediante un hook débil en el core.
-- `[COMPILA]` Flasheador OpenOCD que preserva la sombra EEPROM al actualizar el
-  firmware.
+- `[MEDIDO]` Flasheador OpenOCD probado con `cms32_flash_safe`: crea backup,
+  borra/programa sólo firmware, verifica firmware y confirma que la sombra
+  EEPROM no cambió antes de reiniciar.
 - `[MEDIDO]` Backup y verificación EEPROM probados por OpenOCD: lectura de 1024
   bytes desde `0xFC00`, archivo con firma `chli` y comparación binaria correcta.
-- `[PENDIENTE]` `cms32_flash_safe` y `cms32_eeprom_restore` están implementados
-  en el working tree, pero todavía no se probó ninguna operación de borrado o
-  programación con estos procedimientos.
+- `[PENDIENTE]` `cms32_eeprom_restore` está implementado, pero todavía no se
+  probó su operación destructiva de borrado y reprogramación de la sombra.
 - `[COMPILA]` Menú manual para ejercitar buck/boost.
 
 ### Pendiente o de riesgo alto
@@ -312,6 +313,289 @@ Mediciones: pines, frecuencia, duty, tensión, corriente, temperatura.
 Riesgos o anomalías:
 Próximo paso mínimo:
 ```
+
+### 2026-08-17 - Los siete canales de balance responden con pack 6S
+
+- Verificación previa del pack 6S, referida a su negativo: 0,000; 3,930;
+  8,000; 11,920; 15,870; 19,490 y 23,610 V. Las celdas calculadas son 3,930;
+  4,070; 3,920; 3,950; 3,620 y 4,120 V. El pack está desbalanceado y se usó
+  sólo para sensado, sin carga ni balanceo.
+- `[MEDIDO]` Con sólo el conector de balance: Vb0 0,000 V -> 0; Vb1 3,930 V
+  -> 43062; Vb2 8,000 V -> 49524; Vb3 11,920 V -> 51405; Vb4 15,870 V ->
+  49246; Vb5 19,490 V -> 49601; Vb6 23,610 V -> 50205.
+- Los siete canales responden, están dentro de rango y ninguno satura. La
+  reducción de cuentas entre canales consecutivos es esperable porque poseen
+  divisores diferentes; las cuentas no representan directamente la tensión.
+- Frente al ensayo 4S, Vb1..Vb4 cambiaron sólo 160, 84, 58 y 40 cuentas
+  respectivamente (aproximadamente 0,37 %, 0,17 %, 0,11 % y 0,08 %), una
+  repetibilidad funcional razonable pese al ruido ya identificado.
+- `[MEDIDO]` Queda validado el mapeo y recorrido funcional Vb0..Vb6. La
+  calibración fina sigue pendiente con una alimentación limpia.
+- Próximo paso mínimo: desconectar el pack y preparar la validación de PWM con
+  osciloscopio. El menú actual conecta la salida al pulsar START incluso en
+  duty 0 %, por lo que no usarlo hasta definir un montaje y una secuencia
+  segura.
+
+### 2026-08-17 - Lectura acumulada de un pack 4S real
+
+- Verificación previa del pack, referido a su negativo: 0,000; 3,930; 8,000;
+  11,920 y 15,870 V. Las celdas calculadas son 3,930; 4,070; 3,920 y 3,950 V.
+- `[MEDIDO]` Con sólo el conector de balance y el visor ADC: Vb0 0,000 V -> 0;
+  Vb1 3,930 V -> 43222; Vb2 8,000 V -> 49608; Vb3 11,920 V -> 51463; Vb4
+  15,870 V -> 49286.
+- Vb4 responde. Sus cuentas no tienen que superar a Vb3 porque cada entrada
+  acumulada posee una escala/divisor diferente.
+- Frente al pack 3S, con tensiones físicas informadas iguales en Vb1..Vb3, las
+  lecturas bajaron 1149, 622 y 427 cuentas (aproximadamente 2,6 %, 1,2 % y
+  0,8 %). El usuario identificó como causa la fuente auxiliar conmutada y su
+  ruido; por eso había propuesto realizar estas comprobaciones con baterías.
+- Estas lecturas validan presencia, orden y rango de los canales, pero el ruido
+  del montaje impide utilizarlas como puntos de calibración fina. No constituyen
+  por sí solas evidencia de un problema de asentamiento del multiplexor ADC.
+- `[PENDIENTE]` Repetir la calibración con una alimentación suficientemente
+  limpia; para el bring-up funcional se puede continuar incrementalmente a 5S.
+
+### 2026-08-17 - Lectura acumulada de un pack 3S real
+
+- Montaje: pack de litio 3S conectado por balance, con bornes principales y
+  etapa de potencia sin utilizar; visor `ADC raw test` y mandos de balance ya
+  comprobados en bajo.
+- `[MEDIDO]` Referido al GND del MCU: Vb0 0,000 V -> ADC 1; Vb1 3,930 V ->
+  44371; Vb2 8,000 V -> 50230; Vb3 11,920 V -> 51890.
+- Las tensiones diferenciales de las celdas son 3,930 V, 4,070 V y 3,920 V.
+  Son coherentes para un pack 3S y los cuatro canales avanzan en orden
+  monótono.
+- Las cuentas de Vb1 no coinciden con la caracterización anterior de un tap
+  aislado a igual tensión. Además de la distinta topología de prueba, la fuente
+  conmutada ruidosa impide atribuir esa diferencia al ADC o usarla para
+  calibración.
+- `[PENDIENTE]` Repetir el procedimiento incrementalmente con un pack 4S,
+  verificando primero sus cinco tensiones acumuladas con multímetro. No
+  habilitar PWM, bornes principales ni balanceadores.
+
+### 2026-08-17 - Vb2 responde, prueba de tap aislado no calibrable
+
+- `[MEDIDO]` Con B7 unido a GND, B6 flotante y fuente limitada aplicada sólo a
+  B5: 0 V -> ADC Vb2 3001; 4,209 V -> 25940.
+- La pendiente entre esos puntos es 5449,988 cuentas/V. Extrapolar a 7,524 V
+  predice aproximadamente 44007, lejos de las 49842 cuentas observadas con la
+  batería 2S y B6 conectado.
+- La discrepancia demuestra que los taps y sus redes interactúan; una entrada
+  individual con las demás flotantes valida que el canal responde, pero no es
+  un montaje válido para calibración.
+- `[PENDIENTE]` No elevar más B5 con B6 flotante. Construir un simulador 2S
+  pasivo con dos resistencias iguales para presentar simultáneamente B7=0,
+  B6=V/2 y B5=V, con fuente limitada.
+
+### 2026-08-17 - Vb1 caracterizado
+
+- `[MEDIDO]` Cuatro puntos con fuente referenciada a GND y 0 mA indicados:
+  0,000 V -> 3105; 0,998 V -> 14975; 3,003 V -> 38700; 4,209 V -> 53325.
+- El ajuste global da 11914,653 cuentas/V y offset 3071,425 cuentas. El residuo
+  máximo equivale a 12,7 mV; no se observa saturación a 4,209 V.
+- La calibración heredada de Vb1 no representa esta unidad. Conservar como
+  candidatos de calibración los extremos medidos, sin escribir EEPROM todavía.
+- La prueba superó ligeramente el máximo solicitado de 4,1 V; no aplicar más
+  tensión a Vb1.
+- Próximo paso mínimo: retornar la fuente a 0 V, mover sólo el positivo desde
+  B6/Vb1 hacia B5/Vb2 y caracterizar Vb2 con corriente limitada.
+
+### 2026-08-17 - Vb1 con fuente limitada
+
+- Montaje: fuente auxiliar de dos terminales, negativo unido a GND de entrada y
+  X6/B7, positivo a X6/B6, límite de 2 mA; bornes principales y batería real
+  desconectados.
+- `[MEDIDO]` Vb0 permaneció 0 -> ADC 0. Vb1: 0,998 V -> 14975 y 3,003 V ->
+  38700. La fuente indicó 0 mA en ambos puntos, confirmando bleed apagado.
+- El ajuste preliminar entre ambos puntos da 11832,918 cuentas/V y offset
+  3165,748 cuentas. Ese ajuste predice 47113 a 3,714 V, cercano a las 47033
+  cuentas obtenidas con la batería real.
+- `[MEDIDO]` Corrección del dato informado: con la misma fuente conectada y B6
+  en 0 V, Vb1 mostró ADC 3105, no 3. Esto confirma un offset real cercano a las
+  3166 cuentas estimadas con los puntos de 1 y 3 V.
+- `[PENDIENTE]` Caracterizar Vb1 en su rango útil de celda de litio (3–4,2 V),
+  donde importa la calibración. Medir un punto cercano a 4 V con el mismo
+  montaje y límite de corriente.
+
+### 2026-08-17 - Primera lectura de balance 2S
+
+- `[MEDIDO]` Se informaron: Vb0 físico -0,21 V -> ADC 0; Vb1 físico 3,714 V
+  -> ADC 47033; Vb2 físico 7,524 V -> ADC 49842.
+- Vb1 y Vb2 responden y quedan dentro de rango. Sus cuentas no son directamente
+  comparables porque las entradas acumuladas usan divisores diferentes.
+- Vb0 negativo se recorta a cero por ser una entrada ADC unipolar. El valor
+  indica que el negativo del simulador quedó flotante respecto del GND lógico,
+  a diferencia del montaje 0/1/2 V propuesto.
+- Montaje aclarado: se usó una batería de litio 2S real, no el simulador; sólo
+  estaba conectado el puerto de balance X6/B7..B5 y los bornes principales
+  permanecieron desconectados. El multímetro referenciaba al GND del MCU.
+- `[MEDIDO]` La corriente informada fue aproximadamente 0,1 mA en la celda 1 y
+  0 mA en la celda 2, confirmando que los bleed no estaban activos.
+- Las tensiones diferenciales reconstruidas son 3,924 V y 3,810 V. No seguir
+  usando celdas de litio reales durante el bring-up; pasar a simulador limitado
+  antes de conectar más taps.
+- `[PENDIENTE]` La calibración heredada no debe usarse para interpretar estos
+  datos. El equipo disponible para simular batería es una fuente de laboratorio
+  simple de dos terminales, no un simulador multicanal; probar cada entrada de
+  balance por separado, referenciada a GND y con corriente limitada.
+
+### 2026-08-17 - Balanceadores apagados y restricción de ST-Link
+
+- `[MEDIDO]` Con alimentación principal y el visor ADC activo, el usuario
+  comprobó los seis mandos de balance y todos estaban en 0 V.
+- El ST-Link trabaja/referencia a 3,3 V mientras la placa usa 5 V con la fuente
+  principal. Para usar ST-Link el usuario debe retirar la alimentación
+  principal; no intentar lecturas SWD en vivo con ambas alimentaciones unidas.
+- Se descarta la lectura de registros por ST-Link durante funcionamiento normal.
+  La validación física de los seis niveles bajos respalda conectar un simulador
+  con corriente limitada.
+- Próximo paso mínimo: probar únicamente Vb0, Vb1 y Vb2 con 0/1/2 V acumulados,
+  sin conectar los bornes principales ni habilitar bleed.
+
+### 2026-08-17 - Sensado Vout+ validado sin corriente
+
+- `[MEDIDO]` La fuente auxiliar aislada indicó 0 mA en todo el rango de cinco
+  puntos. Esto confirma que P00 mantuvo la etapa de salida aislada durante la
+  prueba y que los valores corresponden al sensado, no a una prueba de potencia.
+- Las tensiones diferenciales reconstruidas como `Vout+ - Vout-` fueron 0,990,
+  5,005, 10,001, 14,996 y 24,988 V, coherentes con los puntos nominales de la
+  fuente auxiliar.
+- Vout+ queda validado en linealidad con buck/PWM apagados. Vout- y los canales
+  de corriente siguen pendientes bajo caída positiva controlada.
+- Próximo paso mínimo: confirmar físicamente los seis mandos de balance en bajo
+  antes de conectar un simulador al conector de balance.
+
+### 2026-08-17 - Linealidad de Vout+ medida; montaje por aclarar
+
+- `[MEDIDO]` Se informaron los puntos Vout+: 0,700 V -> 1517; 4,547 V ->
+  10016; 9,515 V -> 21007; 14,495 V -> 32028; 24,471 V -> 54129.
+- El ajuste da 2213,405 cuentas/V y offset -44,964 cuentas, con residuo máximo
+  equivalente a 5,7 mV. Vout+ es lineal en los puntos ensayados.
+- Montaje aclarado: la fuente auxiliar era aislada, con su negativo conectado al
+  negativo de salida de batería; el multímetro usaba como referencia el GND de
+  entrada. Por eso la salida flotante podía llevar Vout- por debajo de VSS con
+  buck apagado.
+- Vout- físico fue informado entre -0,29 V y -0,517 V, mientras ADC2 permaneció
+  en 0. Es coherente con la saturación a cero de un ADC unipolar ante tensión
+  negativa; no valida el canal bajo caída positiva en el shunt.
+- Sigue sin informarse la corriente de la fuente auxiliar. La prueba llegó por
+  iniciativa del usuario a 24,471 V, por encima del único punto bajo inicialmente
+  solicitado; no repetir ese extremo cerca de componentes nominales de 25 V.
+- `[PENDIENTE]` Validar Vout- y corriente sólo con caída positiva controlada por
+  el shunt, después de comprobar PWM y estados transitorios.
+
+### 2026-08-17 - Linealidad de Vin validada
+
+- `[MEDIDO]` Con fuente limitada a 600 mA se registraron tres puntos:
+  11,173 V -> 24582; 13,176 V -> 29017; 15,182 V -> 33454.
+- El ajuste lineal resulta 2213,020 cuentas/V y offset -143,303 cuentas. Los
+  residuos son -0,774, +1,546 y -0,773 cuentas, equivalentes a menos de
+  0,7 mV sobre la recta ajustada.
+- Esto confirma canal, alineación y excelente linealidad de Vin en ese rango.
+  No convierte la calibración heredada en válida; los puntos deben guardarse
+  más adelante en la calibración propia de esta unidad.
+- Próximo paso mínimo: aplicar una tensión externa baja y limitada a Vout+ con
+  la salida cortada, y validar Vout+ sin habilitar PWM.
+
+### 2026-08-17 - Alineación ADC confirmada físicamente
+
+- `[MEDIDO]` Después de flashear la corrección, con entrada real de 12,175 V,
+  Vin pasó de 1676 a 26803. El valor teórico por el desplazamiento es
+  `1676 << 4 = 26816`; la diferencia es 13 cuentas.
+- `[MEDIDO]` En el mismo montaje: Vout+=0, Vout-=1, Ismps=0 e Idischarge=0 en
+  promedio. Son cuentas ADC normalizadas, no unidades eléctricas calibradas.
+- Esto valida la alineación de ADCR y el recorrido básico de esos canales con
+  señales en reposo. No valida todavía las escalas, ganancias ni polaridades
+  bajo tensión/corriente aplicada.
+- Próximo paso mínimo: comprobar linealidad de Vin en dos tensiones de entrada
+  cercanas y seguras, medidas simultáneamente con multímetro.
+
+### 2026-08-17 - Alineación del resultado ADC corregida
+
+- Montaje: entrada real de 12,175 V, fuente limitada a 600 mA, salida y balance
+  desconectados, visor en promedio.
+- `[MEDIDO]` Antes de corregir, Vin mostraba 1676; Vout+, Vout-, Ismps e
+  Idischarge mostraban 0.
+- `[MANUAL]` El capítulo 11.2.7 indica que ADCR contiene el resultado de 12 bits
+  en `ADCR[11:0]` y que los bits altos son cero en modo selección. El driver lo
+  describía y utilizaba incorrectamente como alineado a la izquierda.
+- Se normalizó cada muestra con máscara `0x0FFF` y desplazamiento de cuatro
+  bits para llevarla a la escala de 16 bits esperada por el core.
+- `[COMPILA]` El target aislado compiló con la normalización corregida: 31.900
+  bytes de texto, 32 de data y 3.244 de BSS.
+- `[MEDIDO]` La corrección fue flasheada con `cms32_flash_safe`. Firmware de
+  31.932 bytes, SHA-256
+  `534244C2862C2749F19192CFEDA50BF434AAA682C0E5A4B5E95EBAE421BE5F8A`.
+- OpenOCD verificó firmware y EEPROM; el backup de 1024 bytes conserva el
+  SHA-256 `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[PENDIENTE]` Repetir la línea base. El valor Vin todavía no debe usarse como
+  calibración.
+
+### 2026-08-17 - Estado seguro confirmado antes de medir ADC
+
+- `[MEDIDO]` En `ADC raw test`, con referencia en el negativo de entrada DC,
+  P00 mide 3,3 V y P15 mide 0 V.
+- P00 alto corresponde a salida de batería desconectada; P15 bajo confirma que
+  no hay mando PWM en continua. Falta comprobar con osciloscopio la ausencia de
+  pulsos/glitches antes de ensayar potencia.
+- Próximo paso mínimo: registrar Vin, Vout+, Vout-, Ismps e Idischarge en modo
+  promedio, sin salida ni balance conectados.
+
+### 2026-08-17 - Refresco del visor ADC validado en pantalla
+
+- `[MEDIDO]` El usuario recorrió los canales después del segundo flasheo y
+  confirmó que los nombres ya no conservan caracteres del canal anterior.
+- El visor queda listo para registrar la línea base ADC con salida principal y
+  balance desconectados.
+- Próximo paso mínimo: confirmar P00 alto y P15 bajo en el visor ADC, y anotar
+  los 14 valores promedio sin señales externas aplicadas.
+
+### 2026-08-17 - Corrección del refresco del visor ADC
+
+- `[MEDIDO]` El visor arranca y Vout+ muestra 0 con la salida desconectada.
+- Al cambiar de canal, los nombres cortos dejan caracteres del nombre anterior
+  porque `lcdPrint()` no completa con espacios el ancho solicitado.
+- Se corrigió el visor para rellenar los nueve caracteres reservados al nombre
+  del canal.
+- `[COMPILA][MEDIDO]` La corrección se compiló y flasheó con
+  `cms32_flash_safe`. Firmware de 31.932 bytes, SHA-256
+  `B9B1CD78238679FDBF8C365491544B29CDE7096F50A639508596B5C7ED01228C`.
+- El backup previo de 1024 bytes conservó el SHA-256
+  `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54` y
+  OpenOCD confirmó que coincide con la EEPROM después de programar.
+- La corrección fue posteriormente verificada en pantalla.
+
+### 2026-08-17 - Primer flasheo seguro con preservación EEPROM
+
+- `[MEDIDO]` Se ejecutó `cms32_flash_safe` mediante ST-Link V2J46S7 y SWD
+  dapdirect, con tensión de target de 3,268 V.
+- Firmware de prueba ADC: 31.920 bytes, SHA-256
+  `8374EB33997A4C668FD8D6823B943C6C693735FB0B839F66CFA3AE8227508213` y
+  option bytes `EE 36 E0`. La herramienta confirmó que no invade `0xFC00`.
+- Backup previo guardado en
+  `local-backups/cms32l051/eeprom-2026-08-17-before-adc-test.bin`, 1024 bytes,
+  SHA-256
+  `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- El firmware fue borrado y programado completamente. OpenOCD verificó la
+  imagen y confirmó `EEPROM backup matches flash` antes de `reset run`.
+- No se habilitaron desde el procedimiento las salidas de potencia.
+- `[PENDIENTE]` Confirmar en la placa que arranca, entrar a `ADC raw test` y
+  registrar los 14 canales con la potencia desconectada.
+
+### 2026-08-17 - Visor ADC seguro preparado
+
+- Se agregó temporalmente `Options -> ADC raw test` al firmware normal del
+  target CMS32L051; no se creó un target auxiliar.
+- El visor recorre Vout+, Vout-, Ismps, Idischarge, temperatura interna y
+  externa, Vin y Vb0..Vb6. START alterna promedio/lectura instantánea,
+  INC/DEC cambia de canal y STOP sale.
+- Al entrar y salir fuerza PWM apagado, balanceadores apagados y salida de
+  batería desconectada. `AnalogInputs::powerOn(false)` inicia las conversiones
+  sin habilitar P00.
+- `[COMPILA]` El target aislado compiló: 31.888 bytes de texto, 32 bytes de
+  data, 3.244 bytes de BSS y `.bin` de 31.920 bytes; no invade `0xFC00`.
+- Posteriormente fue flasheado con autorización y preservación EEPROM
+  verificada. Aún falta probar el visor en la pantalla.
 
 ### 2026-08-17 - Punto de partida para pruebas de ADC y PWM
 

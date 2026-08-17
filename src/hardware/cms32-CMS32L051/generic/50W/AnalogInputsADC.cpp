@@ -26,9 +26,9 @@
  * Ismps is sampled four times per round (ADC_I_SMPS_PER_ROUND) — the sum is
  * divided by four when the last measurement of the average window lands.
  *
- * ADCR is a 12-bit result left-aligned in a 16-bit register, so reading
- * `ADC->ADCR` directly already gives a 0…0xFFF0 value scaled to the 16-bit
- * range expected by the core. No extra shift is needed.
+ * ADCR stores the 12-bit result right-aligned in bits 11:0. The core uses a
+ * 16-bit-scale representation, so every sample is shifted left by four before
+ * it is stored or accumulated.
  */
 
 #include "atomic.h"
@@ -53,6 +53,8 @@ extern "C" {
 #define ADC_I_SMPS_PER_ROUND        4
 #define ADC_INTERNAL_TEMP_CHANNEL   0x80U   /* ADS value for internal temp sensor */
 #define ADC_BURST_DISCARD_SAMPLES   1       /* discard first sample after channel switch */
+#define ADC_RESULT_MASK             0x0FFFU
+#define ADC_RESULT_SHIFT            (ANALOG_INPUTS_RESOLUTION - ANALOG_INPUTS_ADC_RESOLUTION_BITS)
 
 
 namespace AnalogInputsADC {
@@ -214,8 +216,8 @@ extern "C" void IRQ21_Handler(void)
 {
     using namespace AnalogInputsADC;
 
-    /* ADCR is left-aligned in a uint16_t — value is already in 16-bit scale. */
-    uint16_t sample = ADC->ADCR;
+    /* [MANUAL] ADCR[11:0] contains the right-aligned conversion result. */
+    uint16_t sample = (uint16_t)((ADC->ADCR & ADC_RESULT_MASK) << ADC_RESULT_SHIFT);
 
     /* Drop the very first sample of every burst (channel switch settling). */
     if(burst_count_ >= ADC_BURST_DISCARD_SAMPLES) {

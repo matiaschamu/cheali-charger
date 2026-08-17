@@ -73,6 +73,9 @@ namespace options {
 #ifdef ENABLE_BUCK_TEST
     STRING(buckTest,        "buck test");
 #endif
+#ifdef ENABLE_ADC_TEST
+    STRING(adcTest,         "ADC raw test");
+#endif
 }
 
 namespace ProgramData {

@@ -8,6 +8,9 @@ set(GENERIC_SOURCE
     AnalogInputsADC.cpp
     AnalogInputsADC.h
 
+    AdcTest.cpp
+    AdcTest.h
+
     outputPWM.cpp
     outputPWM.h
 
