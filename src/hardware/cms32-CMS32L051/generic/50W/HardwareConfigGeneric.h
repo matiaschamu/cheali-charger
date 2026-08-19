@@ -52,7 +52,10 @@
 #define ANALOG_INPUTS_ADC_DELTA_SHIFT           4
 #define ANALOG_INPUTS_ADC_RESOLUTION_BITS       12
 
-#define ANALOG_INPUTS_MAX_ADC_Vout_plus_pin (ANALOG_INPUTS_MAX_ADC_VALUE/2)
+/* [ESQUEMA] Vout+ uses a 100k/20k divider, so 27 V produces about 4.5 V
+ * at the ADC input. The CMS32L051 therefore needs the complete ADC range;
+ * the inherited half-scale clamp trips around 14.8 V after calibration. */
+#define ANALOG_INPUTS_MAX_ADC_Vout_plus_pin ANALOG_INPUTS_MAX_ADC_VALUE
 
 #define CHEALI_CHARGER_ARCHITECTURE_GENERIC             1
 #define CHEALI_CHARGER_ARCHITECTURE_GENERIC_STRING      "50W"

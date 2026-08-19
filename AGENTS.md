@@ -314,6 +314,203 @@ Riesgos o anomalías:
 Próximo paso mínimo:
 ```
 
+### 2026-08-19 - Corrección de carrera en la interrupción ADC
+
+- `[MEDIDO]` En calibración de corriente de carga con una celda de 3,7 V,
+  `Value=415`, P00 permanecía bajo y P15 no producía PWM. Al confirmar la
+  edición, el menú quedaba bloqueado esperando una medición ADC completa.
+- `[MANUAL]` El driver del fabricante limpia la bandera INTAD al entrar en la
+  interrupción. El port la limpiaba después de iniciar la conversión siguiente
+  y ejecutar el PID; si esa conversión terminaba durante el PID, su bandera se
+  borraba y el recorrido ADC se detenía.
+- Se movió la limpieza de INTC/NVIC al comienzo de `IRQ21_Handler`, antes de
+  procesar la muestra e iniciar la siguiente conversión.
+- `[COMPILA]` El target CMS aislado compiló y produjo una imagen de 33.732
+  bytes; los option bytes en `0xC0..0xC2` fueron `EE 36 E0`.
+- Se flasheó con `cms32_flash_safe`. La verificación del firmware terminó sin
+  errores y la EEPROM preservada coincidió con el backup de 1.024 bytes
+  `eeprom-2026-08-19-before-adc-irq-fix.bin` (SHA-256
+  `44A5E3A128381751E9CDF3D3B9BA57EF32A5FFE7138D11B286A37FFE73E14FD8`).
+- `[MEDIDO]` Tras flashear la corrección, el menú ya permitió aumentar
+  `Value` desde 415 hasta 5000 durante la calibración de carga de 100 mA, pero
+  P15 no produjo PWM en ningún punto. No elevar más `Value`: según la tabla de
+  calibración heredada, 5000 está cerca de la consigna cruda nominal de 1 A y
+  podría provocar un salto de corriente si el lazo se habilita de repente.
+- `[MEDIDO]` En la misma calibración, la línea `Output` mostró ADC crudo de
+  `Ismps=0` con `Value=0`. Por lo tanto, al usar una consigna positiva el error
+  del PID debería ser positivo; la ausencia observada de PWM no se explica por
+  una lectura de corriente mayor que la consigna.
+- `[MEDIDO]` Con una consigna positiva en calibración, P15 permaneció fijo en
+  0 V; no quedó alto ni mostró actividad PWM. Junto con `Ismps=0`, esto indica
+  que `setPWM()` no está recibiendo un mando positivo o que el PID se
+  deshabilita antes de generarlo; queda descartada una saturación rápida a
+  100 % como explicación de la traza plana.
+- `[MEDIDO]` Con batería simulada/fuente limitada conectada, `power ADC` mostró
+  `Vout+ raw=7661` con la salida cortada y `8659` tras armar `B000`. La primera
+  comparación con un corte aproximado de 32300 usó por error la calibración
+  por defecto; la EEPROM actual produce un umbral muy distinto, detallado
+  abajo.
+- `[COMPILA]` Se agregó temporalmente `buck test -> PID debug`. La pantalla
+  expone llamadas totales, actualizaciones habilitadas, estado/corte, consigna,
+  salida del integrador, `Ismps` rápido, `Vout+` rápido y umbral de corte. START
+  sólo habilita el callback interno con consigna cero, P00 cortado y P15 bajo;
+  INC/DEC cambian páginas y no pueden aumentar duty.
+- `[COMPILA]` Target CMS aislado con diagnóstico: texto 34.380 bytes, data 32,
+  BSS 3.384 e imagen de 34.412 bytes. Option bytes `EE 36 E0`, SHA-256
+  `2C4BD01C399A25C15795C31BB3F623A2FC097BC461DE250BAA10BF90580330F8`.
+- `[MEDIDO]` Con autorización explícita se flasheó mediante
+  `cms32_flash_safe`, ST-Link a 3,247 V. OpenOCD verificó los 34.412 bytes,
+  confirmó `EEPROM backup matches flash` y reinició el MCU.
+- Backup `eeprom-2026-08-19-before-pid-debug.bin`, 1.024 bytes, firma `chli` y
+  SHA-256 `40329A3D1D19406AB0F4A25D252F5029BFCC023CE3890F3E04A4C07F48E752A8`.
+- `[MEDIDO]` En `PID debug`, `U` y `A` aumentaron continuamente y con el mismo
+  valor; las otras páginas mostraron `E1 X0 S0`, `M0 I0` y `V0 C20`. Esto
+  confirma que el ADC llama al PID, que el PID queda habilitado con consigna
+  cero y que el acumulador permanece correctamente en cero durante la prueba
+  segura.
+- `[MEDIDO]` El backup EEPROM actual contiene para `Vout_plus_pin` y
+  `Vout_minus_pin` los puntos `(0,50)` y `(18,23606)`. Con esa tabla,
+  `reverseCalibrateValue(..., 27000)` produce 20 por aritmética entera, igual
+  a `C20`. En calibración de corriente, `Vout+ raw=8659` supera ese umbral y
+  deshabilita el PID antes del primer PWM.
+- El backup anterior al oversampling conservaba los valores heredados
+  `(0,50)` y `(25540,23735)`; `(18,23606)` ya aparece en el backup anterior a
+  la corrección de la carrera ADC. La calibración de tensión guardada durante
+  ese período debe tratarse como inválida, no como una escala medida fiable.
+- `[MEDIDO]` En `power ADC`, armado en `B000`, `Vout- raw=0`; junto con
+  `Vout+ raw=8659`, la lectura diferencial actual es 8659. Esto confirma que
+  el punto guardado con `x=18` no representa el montaje actual y debe
+  reemplazarse mediante una calibración de tensión válida.
+- `[MEDIDO]` Con Vin de 12 V y el conjunto de seis celdas conectado, la
+  pantalla de calibración mostró Vb1=3,93 V, Vb2=4,06 V, Vb3=3,91 V,
+  Vb4=3,95 V, Vb5=3,61 V, Vb6=4,11 V y suma V1-6=23,60 V, pero Vout quedó
+  saturado en 65,53 V. La suma de balance es coherente entre sí; la saturación
+  queda localizada en la calibración copiada de Vout.
+- `[PENDIENTE]` Reparar y verificar primero la calibración de tensión; no
+  anular ni elevar por código el corte de `Vout+`. Repetir la calibración de
+  corriente sólo cuando `C` sea coherente con los ADC medidos.
+- `[MEDIDO]` Tras recalibrar, al intentar iniciar una carga de plomo el equipo
+  mostró `calib. error I charge 11`. En el core, 11 significa que
+  `check(IsmpsSet, minIc, maxIc)` devolvió 1: la calibración de la consigna de
+  carga extrapola `settings.minIc` (50 mA por defecto) a un valor crudo cero.
+  No es un error de la química Pb ni identifica por sí solo una falla del ADC
+  físico `Ismps`.
+- `[MEDIDO]` Los puntos guardados de `IsmpsSet` son `Value=312` a 500 mA y
+  `Value=2082` a 3000 mA. Extrapolar linealmente a `minIc=50 mA` da
+  aproximadamente -6,6, que `reverseCalibrateValue()` limita a cero y explica
+  exactamente el error 11. El cruce por cero calculado queda cerca de 59 mA.
+- `[PENDIENTE]` Recalibrar el punto bajo en una corriente realmente validada
+  menor, y configurar `minIc` no por debajo del rango medido. No relajar
+  `Calibration::check()` ni usar una extrapolación no comprobada para ocultar
+  el error.
+- `[MEDIDO]` Después de corregir `IsmpsSet`, el mensaje cambió de
+  `I charge 11` a `I charge 1`. Esto confirma que la tabla de consigna ya pasa
+  y que ahora falla con subcódigo 1 la tabla física `Ismps`: su ADC calibrado
+  también extrapola la corriente mínima a raw cero.
+- `[PENDIENTE]` Obtener los raw físicos guardados para los puntos bajo y alto.
+  Un intento de backup EEPROM no destructivo no llegó a conectar al ST-Link
+  (`open failed`); no detuvo el MCU ni leyó, borró o programó flash.
+- `[MEDIDO]` Tras reconectar ST-Link, el backup no destructivo se completó a
+  3,242 V y el MCU fue reiniciado. Archivo
+  `eeprom-2026-08-19-after-current-calibration.bin`, 1.024 bytes, firma `chli`,
+  SHA-256 `F2DB1709138EC066F59BA7DF6AB9520A15573B06502F393DF52D7F8F71B09F5A`.
+- `[MEDIDO]` La EEPROM confirma `IsmpsSet=(69,100),(2082,3000)` y
+  `Ismps=(0,100),(2078,3000)`. La consigna ya es válida, pero el punto físico
+  de 100 mA guardó raw cero. El canal responde en el punto de 3 A; falta
+  determinar la corriente mínima con raw estable y distinto de cero antes de
+  aceptar una nueva calibración baja.
+- `[MEDIDO]` El usuario informó que una carga Pb y una Li de una celda sí
+  inician, pero con seis celdas Li el equipo entra a la pantalla de carga sin
+  activar PWM, contar tiempo ni mostrar error.
+- `[COMPILA][PENDIENTE]` Ese patrón coincide con `Program::Info`: antes de
+  pasar a `InProgress`, `StartInfoStrategy` retiene silenciosamente el inicio
+  LiXX si el número configurado/detectado de celdas no coincide, falta el
+  puerto de balance o `|Vout-Vbalancer|` supera 0,5 V. El campo correspondiente
+  parpadea; `Monitor::powerOn()` todavía no se ejecuta, por lo que no corre el
+  tiempo ni se habilita el SMPS. Falta observar qué campo parpadea y qué número
+  de celdas muestra la pantalla.
+- `[PENDIENTE][RIESGO]` Con Vin=12 V, una 6S en 23,6 V ya está cerca del límite
+  teórico actual de boost (`MAX_PID_MV_FACTOR=1.5`, aproximadamente 2*Vin=24 V)
+  y su tensión final de 25,2 V lo supera. No aumentar el factor ni la tensión
+  de entrada sin validación específica de hardware.
+- `[MEDIDO]` La detección funciona hasta 3S; al conectar 4S el equipo informa
+  cinco celdas y muestra `V5`, por lo que `StartInfoStrategy` bloquea
+  correctamente el inicio por discrepancia 4S/5S.
+- `[COMPILA][PENDIENTE]` El core considera conectada cada Vb cuyo valor
+  calibrado supera 0,400 V y cuenta todos los bits. Con 4S, Vb5 está superando
+  ese umbral aunque debería estar desconectado. No ignorar la celda fantasma:
+  primero medir raw/promedio de Vb4, Vb5 y Vb6 con salida cortada y revisar
+  cableado/calibración, porque un falso canal también afectaría al balanceo.
+- `[MEDIDO]` Los promedios ADC Vb4=49333, Vb5=49665 y Vb6=50279 fueron
+  tomados con 6S, no con 4S. Son coherentes con las tres tomas acumuladas y sus
+  divisores de distinta relación; no sirven para caracterizar la quinta celda
+  fantasma observada con 4S. Queda pendiente repetirlos con el montaje 4S.
+- `[MEDIDO]` Con 6S el programa sí comienza `charge+balance`, pero la pantalla
+  de celdas permanece en `m`. En `ScreenBalancer`, `m` significa que el
+  balanceador está apagado y alguna celda todavía no alcanzó el criterio de
+  estabilidad; requiere seis mediciones estables consecutivas antes de
+  empezar. Si permanece indefinidamente, registrar qué tensión de celda varía
+  entre mediciones antes de probar las salidas de balance.
+- `[MEDIDO]` El usuario observó que las seis tensiones mostradas permanecen
+  estables aunque continúa la `m`; la estabilidad visual no explica por sí
+  sola el contador interno.
+- `[COMPILA][PENDIENTE]` Hay otra ruta capaz de mantener `m`: cada cambio de
+  consigna en `SMPS::trySetIout()` termina en `SMPS::setValue()`, que llama a
+  `AnalogInputs::resetMeasurement()` y reinicia todos los contadores
+  `stableCount_`, incluidos Vb1..Vb6. Si Thevenin reajusta corriente en cada
+  medición, el balanceador nunca reúne sus seis mediciones consecutivas aunque
+  las tensiones redondeadas no cambien. Instrumentar durante carga el contador
+  de cambios de consigna y los seis `stableCount_` antes de modificar el core.
+- `[MEDIDO]` En la prueba 6S, la pantalla principal muestra `N`, 0 mA y el
+  tiempo queda congelado en 0:01. `N` confirma que SMPS, descarga y balanceo
+  están todos inactivos; además, `Monitor::getTimeSec()` usa el tiempo real y
+  debería avanzar aun con corriente cero. La `m` es por tanto consecuencia de
+  un bloqueo más general alrededor de la primera medición, no evidencia de que
+  el balanceador sea la causa inicial.
+- `[PENDIENTE]` Comprobar si STOP responde durante el estado congelado. Si
+  responde, el ciclo principal sigue ejecutándose y el problema se acota al
+  estado/mediciones. Si no responde, investigar detención o inanición de
+  SysTick/ciclo principal al completar la primera ventana ADC.
+- `[MEDIDO]` STOP sí responde. Al entrar después, sin batería y sin pulsar
+  START, en `PID debug` el contador `U` avanzó de 23900 a 38000 mientras
+  `A=1`; la página siguiente mostró `E0 X1 S0`. El ADC y el ciclo principal
+  siguen funcionando: el PID fue habilitado una vez y se deshabilitó por el
+  corte de Vout antes de recibir una consigna positiva.
+- `[ESQUEMA][MEDIDO]` El límite heredado
+  `ANALOG_INPUTS_MAX_ADC_Vout_plus_pin=32767` equivale a aproximadamente
+  14,82 V con la calibración actual de Vout+ `(0,50),(52293,23622)`. Esto
+  explica que hasta 3S funcione y que 4S/6S disparen `X1`. El esquema muestra
+  100 kΩ/20 kΩ en Vout+: 27 V producen aproximadamente 4,5 V en el ADC, por lo
+  que esta placa utiliza la escala ADC completa y no media escala.
+- Se cambió únicamente el límite CMS
+  `ANALOG_INPUTS_MAX_ADC_Vout_plus_pin` a `ANALOG_INPUTS_MAX_ADC_VALUE`. La
+  protección calibrada de 27 V permanece: con la tabla actual corresponde a
+  raw aproximado 59786, dentro de los 65520 códigos publicados por el ADC.
+- `[COMPILA]` Target CMS aislado: texto 34.380 bytes, data 32, BSS 3.384 e
+  imagen de 34.412 bytes. Option bytes `EE 36 E0`, SHA-256
+  `5A22C140E6B4A17591EDBC52FD9D377FF59F6FBFCFEF198FE78B208566DCF24B`.
+  `git diff --check` sin errores; sólo aparecen advertencias conocidas de
+  conversión LF/CRLF. La primera invocación no encontró `objcopy` en PATH; al
+  exponer temporalmente el binario de la misma toolchain se generaron y
+  verificaron los artefactos.
+- `[PENDIENTE]` Repetir la prueba 6S con fuente limitada, corriente de carga
+  mínima y supervisión de `X`, corriente, PWM y temperatura. El boost a
+  Vin=12 V sigue cerca de su límite teórico y no queda validado por esta
+  corrección.
+- `[COMPILA][MEDIDO]` Con autorización explícita se flasheó la imagen de
+  34.412 bytes mediante `cms32_flash_safe`. ST-Link midió 3,268 V; OpenOCD
+  completó borrado/programación, verificó el firmware, confirmó
+  `EEPROM backup matches flash` y reinició el MCU.
+- Backup `build-arm/eeprom-2026-08-19-before-vout-fullscale.bin`, 1.024 bytes,
+  firma `chli`, SHA-256
+  `F569D568C0F62943A20F9F08DA3BBACBAB1B8B6778D4C6B7631B1BD33EB1123B`.
+- `[MEDIDO]` Después del flasheo, `PID debug` con salida cortada mostró
+  exactamente `C59786` y `X0`. Esto confirma en placa que el firmware nuevo
+  conserva el corte calibrado de 27 V y ya no lo recorta a 32767 en reposo.
+- `[PENDIENTE]` Probar funcionalmente 6S con corriente y fuente limitadas. El
+  hecho de que `C` sea correcto no valida todavía el boost ni el lazo cerrado
+  a esa relación Vin/Vout.
+
 ### 2026-08-19 - Raw ADC oversampleado a 16 bits
 
 - Archivos modificados: `generic/50W/AnalogInputsADC.cpp`,

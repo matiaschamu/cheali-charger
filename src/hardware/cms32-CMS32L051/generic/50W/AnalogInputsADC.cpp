@@ -245,6 +245,12 @@ extern "C" void IRQ21_Handler(void)
 {
     using namespace AnalogInputsADC;
 
+    /* [MANUAL] Acknowledge the conversion that brought us here before
+     * starting another one. Clearing these flags at the end can erase the
+     * next conversion's interrupt if it completes while the PID is running. */
+    INTC_ClearPendingIRQ(ADC_IRQn);
+    NVIC_ClearPendingIRQ((IRQn_Type)ADC_IRQn);
+
     /* [MANUAL] ADCR[11:0] contains the right-aligned conversion result. */
     uint16_t raw_sample = (uint16_t)(ADC->ADCR & ADC_RESULT_MASK);
     uint16_t sample = (uint16_t)(raw_sample << ADC_RESULT_SHIFT);
@@ -305,9 +311,6 @@ extern "C" void IRQ21_Handler(void)
         ADC->ADM0 |= ADCS;
     }
 
-    /* Clear pending on BOTH controllers (CMS32L051 has INTC + Cortex-M NVIC). */
-    INTC_ClearPendingIRQ(ADC_IRQn);
-    NVIC_ClearPendingIRQ((IRQn_Type)ADC_IRQn);
 }
 
 

@@ -15,6 +15,14 @@ namespace {
     volatile long i_PID_MV;
     volatile bool i_PID_enable;
 
+    /* Temporary bring-up telemetry. These counters distinguish an ADC path
+     * that never calls the PID from one that calls it while disabled. */
+    volatile uint16_t i_PID_update_calls;
+    volatile uint16_t i_PID_active_updates;
+    volatile uint16_t i_PID_last_feedback;
+    volatile uint16_t i_PID_last_vout;
+    volatile bool i_PID_cutoff_tripped;
+
     /* This board has one physical power PWM: TM41/TO11 on P15.  The `pin`
      * parameter remains in outputPWM only for API compatibility with the
      * multi-channel AVR/Nuvoton ports. */
@@ -64,9 +72,14 @@ uint16_t hardware::getPIDValue()
 
 void SMPS_PID::update()
 {
+    i_PID_update_calls++;
     if(!i_PID_enable) return;
+
+    i_PID_active_updates++;
+    i_PID_last_vout = AnalogInputsADC::getFastADCValue(AnalogInputs::Vout_plus_pin);
     //if Vout is too high disable PID
-    if(AnalogInputsADC::getFastADCValue(AnalogInputs::Vout_plus_pin) >= i_PID_CutOffVoltage) {
+    if(i_PID_last_vout >= i_PID_CutOffVoltage) {
+        i_PID_cutoff_tripped = true;
         hardware::setChargerOutput(false);
         i_PID_enable = false;
         Monitor::i_externalError = MONITOR_EXTERNAL_ERROR_BATTERY_DISCONNECTED;
@@ -76,6 +89,7 @@ void SMPS_PID::update()
     //TODO: rewrite PID
     //this is the PID - actually it is an I (Integral part) - should be rewritten
     uint16_t PV = AnalogInputsADC::getFastADCValue(AnalogInputs::Ismps);
+    i_PID_last_feedback = PV;
     long error = i_PID_setpoint;
     error -= PV;
     i_PID_MV += error*A;
@@ -92,6 +106,11 @@ void SMPS_PID::init(uint16_t Vin, uint16_t Vout)
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         i_PID_setpoint = 0;
+        i_PID_update_calls = 0;
+        i_PID_active_updates = 0;
+        i_PID_last_feedback = 0;
+        i_PID_last_vout = 0;
+        i_PID_cutoff_tripped = false;
         if(Vout>Vin) {
             i_PID_MV = OUTPUT_PWM_PRECISION_PERIOD;
         } else {
@@ -101,6 +120,21 @@ void SMPS_PID::init(uint16_t Vin, uint16_t Vout)
         i_PID_enable = true;
     }
 
+}
+
+void SMPS_PID::getDebugState(DebugState &state)
+{
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        state.updateCalls = i_PID_update_calls;
+        state.activeUpdates = i_PID_active_updates;
+        state.setpoint = i_PID_setpoint;
+        state.feedback = i_PID_last_feedback;
+        state.output = (uint16_t)(i_PID_MV >> PID_MV_PRECISION);
+        state.vout = i_PID_last_vout;
+        state.cutoff = i_PID_CutOffVoltage;
+        state.enabled = i_PID_enable;
+        state.cutoffTripped = i_PID_cutoff_tripped;
+    }
 }
 
 void SMPS_PID::setPID_MV(uint16_t value) {

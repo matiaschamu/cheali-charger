@@ -16,6 +16,7 @@
 #include "imaxB6-pins.h"
 #include "memory.h"
 #include "outputPWM.h"
+#include "SMPS_PID.h"
 
 extern "C" {
 #include "CMS32L051.h"
@@ -38,6 +39,7 @@ static void runPowerAdc();
 static void runChargeDischarge();
 static void runOutputCutoff();
 static void runBalancers();
+static void runPidDebug();
 
 static const char string_pwm_manual[] PROGMEM = "PWM manual";
 static const char string_buck_boost[] PROGMEM = "buck/boost";
@@ -45,6 +47,7 @@ static const char string_power_adc[] PROGMEM = "power ADC";
 static const char string_charge_discharge[] PROGMEM = "charge/disch";
 static const char string_output_cutoff[] PROGMEM = "output P00";
 static const char string_balancers[] PROGMEM = "balancers";
+static const char string_pid_debug[] PROGMEM = "PID debug";
 
 static const Menu::StaticMenu test_menu[] PROGMEM = {
     {string_pwm_manual,       runPwmManual},
@@ -53,6 +56,7 @@ static const Menu::StaticMenu test_menu[] PROGMEM = {
     {string_charge_discharge, runChargeDischarge},
     {string_output_cutoff,    runOutputCutoff},
     {string_balancers,        runBalancers},
+    {string_pid_debug,        runPidDebug},
     {NULL, NULL}
 };
 
@@ -417,6 +421,87 @@ static void runOutputCutoff()
         }
     }
 
+    forceSafeState();
+}
+
+static void drawPidDebug(bool enabled, uint8_t page)
+{
+    SMPS_PID::DebugState state;
+    SMPS_PID::getDebugState(state);
+
+    lcdSetCursor0_0();
+    lcdPrint(enabled ? "PID diag ON " : "PID diag off", 12);
+    lcdPrint("p", 1);
+    lcdPrintUnsigned(page, 1);
+    lcdPrintSpaces(2);
+
+    lcdSetCursor0_1();
+    if(page == 0) {
+        lcdPrint("U", 1);
+        lcdPrintUnsigned(state.updateCalls, 5);
+        lcdPrint(" A", 2);
+        lcdPrintUnsigned(state.activeUpdates, 5);
+        lcdPrintSpaces(3);
+    } else if(page == 1) {
+        lcdPrint(state.enabled ? "E1" : "E0", 2);
+        lcdPrint(state.cutoffTripped ? " X1 " : " X0 ", 4);
+        lcdPrint("S", 1);
+        lcdPrintUnsigned(state.setpoint, 5);
+        lcdPrintSpaces(4);
+    } else if(page == 2) {
+        lcdPrint("M", 1);
+        lcdPrintUnsigned(state.output, 5);
+        lcdPrint(" I", 2);
+        lcdPrintUnsigned(state.feedback, 5);
+        lcdPrintSpaces(3);
+    } else {
+        lcdPrint("V", 1);
+        lcdPrintUnsigned(state.vout, 5);
+        lcdPrint(" C", 2);
+        lcdPrintUnsigned(state.cutoff, 5);
+        lcdPrintSpaces(3);
+    }
+}
+
+/* Inspect the last PID state and, when START is pressed, enable only the
+ * internal zero-setpoint callback with P00 cut and P15 initially low. No key
+ * in this screen can connect the output or increase duty: INC/DEC only select
+ * telemetry pages. */
+static void runPidDebug()
+{
+    bool enabled = false;
+    uint8_t page = 0;
+    uint8_t previous_key = BUTTON_NONE;
+
+    forceSafeState();
+    AnalogInputs::powerOn(false);
+    waitButtonsReleased();
+
+    while(true) {
+        drawPidDebug(enabled, page);
+        uint8_t key = Keyboard::getPressedWithDelay();
+        bool fresh = key != BUTTON_NONE && key != previous_key;
+        previous_key = key;
+
+        if(key == BUTTON_STOP && fresh) break;
+        if(key == BUTTON_START && fresh) {
+            enabled = !enabled;
+            if(enabled) {
+                hardware::setVoutCutoff(MAX_CHARGE_V);
+                SMPS_PID::init(0, 0);
+            } else {
+                hardware::setChargerOutput(false);
+                forceSafeState();
+            }
+        } else if(fresh && key == BUTTON_INC) {
+            page = (uint8_t)((page + 1) & 3u);
+        } else if(fresh && key == BUTTON_DEC) {
+            page = page == 0 ? 3 : (uint8_t)(page - 1);
+        }
+    }
+
+    hardware::setChargerOutput(false);
+    AnalogInputs::powerOff();
     forceSafeState();
 }
 
