@@ -32,10 +32,10 @@ extern "C" {
 
 namespace outputPWM {
 
-/* Experimental TM41 PWM period: 48 MHz / 800 = 60 kHz. This frequency was
- * taken from another charger and still requires oscilloscope and thermal
- * validation on this board. Resolution = 1/800 = 0.125 % per tick. */
-static constexpr uint16_t TM41_PWM_PERIOD_TICKS = 800;
+/* TM41 PWM period: 48 MHz / 1600 = 30 kHz, restored to the charger's normal
+ * switching frequency for power-stage validation. Resolution = 1/1600 =
+ * 0.0625 % per tick. */
+static constexpr uint16_t TM41_PWM_PERIOD_TICKS = 1600;
 
 /* External value scale exposed to SMPS_PID is 0..OUTPUT_PWM_PRECISION_PERIOD. */
 static constexpr uint32_t VALUE_FULL_SCALE = OUTPUT_PWM_PRECISION_PERIOD;
@@ -85,8 +85,8 @@ static void tm41_stop_pwm()
 }
 
 /* Configure both channels while stopped, then start master and slave with one
- * direct TS1 write.  This intentionally restarts the timer for every manual
- * duty change during bring-up, avoiding an unsynchronised TDR11 update. */
+ * direct TS1 write.  TS1 must only be used when starting: writing it while the
+ * timer is active reinitializes the counter and breaks PWM phase continuity. */
 static void tm41_start_pwm(uint16_t high_ticks)
 {
     CGC->PER0 |= CGC_PER0_TM41EN_Msk;
@@ -118,6 +118,15 @@ static void tm41_start_pwm(uint16_t high_ticks)
     pwm_running_ = true;
 }
 
+/* [MANUAL] TDRmn may be rewritten at any time.  In PWM slave mode TDR11 is
+ * the data value used by channel 1 on the following master trigger, while the
+ * running count is held separately in TCR11.  Updating only TDR11 therefore
+ * changes duty without stopping or retriggering TM41. */
+static void tm41_update_duty(uint16_t high_ticks)
+{
+    TM41->TDR11 = high_ticks;
+}
+
 void initialize(void)
 {
     pwm_running_ = false;
@@ -147,7 +156,8 @@ void setPWM(uint8_t /*pin*/, uint32_t value)
         return;
     }
 
-    tm41_start_pwm(high);
+    if (pwm_running_) tm41_update_duty(high);
+    else              tm41_start_pwm(high);
 }
 
 void disablePWM(uint8_t /*pin*/)

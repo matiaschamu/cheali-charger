@@ -8,15 +8,15 @@
 #define BUCK_TEST_H_
 
 /*
- * Manual buck-converter exerciser.
+ * CMS32L051 laboratory power-test suite.
  *
- * Drives hardware PWM on P15 via TM41 ch0/ch1 (TO11) at ~60 kHz.
- *  - INC / DEC  : ±1 % duty (auto-repeat / speed factor for fast scrolling)
- *  - START      : toggle output ON/OFF (gates PWM and OUTPUT_DISABLE_PIN)
- *  - STOP       : exit (PWM stopped, output disabled, duty reset)
+ * Includes manual P15 PWM, the combined buck/boost production transition,
+ * live power ADC, P20 charger/discharger routing, P00 cutoff and individual
+ * balance outputs. All test exits force the board back to safe idle.
  *
- * The test menu is HW-specific and lives in this port's generic-50W layer; it
- * is reached from OptionsMenu when ENABLE_BUCK_TEST is defined.
+ * The suite is hardware-specific and lives only in this port. It is reached
+ * through the existing Options -> buck test hook when ENABLE_BUCK_TEST is
+ * defined, so adding submenus does not add CMS knowledge to the shared core.
  */
 
 namespace BuckTest {

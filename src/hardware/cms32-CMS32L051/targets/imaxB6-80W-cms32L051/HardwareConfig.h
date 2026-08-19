@@ -22,7 +22,7 @@
 #include "HardwareConfigGeneric.h"
 #include "imaxB6-pins.h"
 
-/* Enable the manual buck-converter test menu (Options → buck test). */
+/* Enable the CMS laboratory power-test suite (Options -> buck test). */
 #define ENABLE_BUCK_TEST
 
 /* Temporary safe raw ADC viewer (Options -> ADC raw test). */

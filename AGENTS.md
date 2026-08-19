@@ -184,7 +184,7 @@ foto histórica, no reemplaza `git status` ni `git fetch`.
 
 ### Pendiente o de riesgo alto
 
-- `[PENDIENTE]` Validar el PWM local de 60 kHz en osciloscopio: frecuencia,
+- `[PENDIENTE]` Validar el PWM local de 30 kHz en osciloscopio: frecuencia,
   duty mínimo/máximo, transición 0%/PWM/100%, glitches y temperatura. No dar
   por cierta la frecuencia elegida ni la afirmación de SOA del comentario sin
   medición en esta placa.
@@ -289,7 +289,7 @@ Antes de flashear, verificar:
    apagado de PWM.
 3. Consolidar el cambio GPIO sólo después de comparar las lecturas ADC con y
    sin él.
-4. Probar el PWM de 60 kHz open-loop con osciloscopio y carga segura, primero
+4. Probar el PWM de 30 kHz open-loop con osciloscopio y carga segura, primero
    buck y luego boost, en duty y corriente bajos.
 5. Habilitar lazo cerrado a baja potencia y ajustar límites/PID con capturas de
    corriente y tensión.
@@ -313,6 +313,62 @@ Mediciones: pines, frecuencia, duty, tensión, corriente, temperatura.
 Riesgos o anomalías:
 Próximo paso mínimo:
 ```
+
+### 2026-08-19 - Suite CMS de pruebas de potencia
+
+- Archivos modificados: `generic/50W/BuckTest.cpp` y `BuckTest.h`. No se
+  agregaron cambios en `src/core/`; se reutiliza el hook condicional existente
+  `Options -> buck test`.
+- `[COMPILA]` La entrada abre seis pruebas específicas del CMS: PWM buck
+  manual, mando combinado buck/boost, ADC crudo con potencia activa,
+  carga/descarga mediante P20, corte P00 y balanceadores individuales.
+- `[COMPILA]` El mando combinado recorre `B000..B100` y luego `G001..G050`.
+  El auto-repetido se detiene exactamente en B100/G001 para no saltar el punto
+  de transición. Al cruzarlo conserva P00 conectado y ejecuta P15 bajo, cambio
+  de P21 y reanudación con el nuevo duty, sin demora intencional.
+- `[COMPILA]` Boost queda limitado al 50 %, igual que
+  `MAX_PID_MV_FACTOR=1.5`. La prueba de descarga queda limitada temporalmente
+  al 20 % hasta medir U9 e `Idischarge`.
+- `[COMPILA]` Todas las entradas y salidas de prueba convergen a P15 bajo, P21
+  bajo, P20 alto, P00 alto y balanceadores apagados. Ninguna prueba se ejecuta
+  al arrancar y cada salida debe armarse con START desde duty cero.
+- `[COMPILA]` Target CMS aislado: imagen de 33.544 bytes, option bytes
+  `EE 36 E0`, SHA-256
+  `D569FCC286AEAE9C4B63BF302A32C5C08C2D3275A8696105E8D639532055491D`.
+- `[PENDIENTE]` Flashear con autorización y validar primero la navegación y
+  estados de reposo; después capturar B100->G001 y G001->B100 midiendo P15,
+  P21 y las compuertas de Q9/U8.
+
+### 2026-08-19 - Actualización continua de duty TM41 preparada
+
+- Archivo modificado: `generic/50W/outputPWM.cpp`.
+- `[MANUAL]` El manual CMS32L051 V1.2.3 indica que `TDRmn` puede reescribirse
+  en cualquier momento y que generar nuevamente el trigger `TSmn` durante la
+  operación reinicializa el contador.
+- `[COMPILA]` El arranque de un duty intermedio todavía configura TM41 y
+  dispara una sola vez `TS1`. Los cambios posteriores entre 1 y 99 % escriben
+  únicamente `TDR11`, sin detener ni reiniciar los canales maestro/esclavo.
+- A pedido del usuario, el período se restauró a 30 kHz: reloj de 48 MHz,
+  `TDR10=1599` y 1600 ticks por período. La resolución queda en 0,0625 %.
+- Los extremos 0 y 100 % continúan deteniendo TM41 y fuerzan P15 como GPIO
+  bajo/alto respectivamente. Volver desde un extremo requiere un nuevo
+  arranque y no forma parte de la prueba de continuidad entre duties PWM.
+- `[MEDIDO]` Se acepta como resuelto que el exceso de ancho visto anteriormente
+  en la señal de compuerta provenía del driver MOSFET y no del PWM generado por
+  TM41.
+- `[COMPILA][MEDIDO]` Imagen de 31.880 bytes, option bytes `EE 36 E0` y
+  SHA-256 `5D850DEB1741C53F8D43F5D8E4DA73AD593E1BB2A6F5CCB4B3A3E5A3BF32474D`.
+  Se flasheó mediante `cms32_flash_safe` con ST-Link a 3,253 V; OpenOCD
+  verificó el firmware, confirmó `EEPROM backup matches flash` y reinició el
+  MCU.
+- Backup `eeprom-2026-08-19-before-continuous-pwm-30khz.bin`, 1.024 bytes,
+  SHA-256 `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[MEDIDO]` Con osciloscopio sobre P15 a 30 kHz, el usuario observó pulsos
+  correctos y continuidad entre cambios de duty intermedios: no aparecieron
+  saltos ni pulsos anómalos. Queda validada la actualización de `TDR11` sin
+  reiniciar TM41.
+- `[COMPILA][PENDIENTE]` La suite nueva ya permite capturar la transición de
+  producción con P00 conectado, pero todavía no fue flasheada ni medida.
 
 ### 2026-08-19 - PID adaptado al PWM único y selectores CMS
 
