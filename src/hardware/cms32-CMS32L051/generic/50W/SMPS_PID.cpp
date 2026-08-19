@@ -3,6 +3,7 @@
 #include "imaxB6.h"
 #include "IO.h"
 #include "AnalogInputs.h"
+#include "AnalogInputsADC.h"
 #include "outputPWM.h"
 #include "atomic.h"
 #include "Monitor.h"
@@ -65,7 +66,7 @@ void SMPS_PID::update()
 {
     if(!i_PID_enable) return;
     //if Vout is too high disable PID
-    if(AnalogInputs::getADCValue(AnalogInputs::Vout_plus_pin) >= i_PID_CutOffVoltage) {
+    if(AnalogInputsADC::getFastADCValue(AnalogInputs::Vout_plus_pin) >= i_PID_CutOffVoltage) {
         hardware::setChargerOutput(false);
         i_PID_enable = false;
         Monitor::i_externalError = MONITOR_EXTERNAL_ERROR_BATTERY_DISCONNECTED;
@@ -74,7 +75,7 @@ void SMPS_PID::update()
 
     //TODO: rewrite PID
     //this is the PID - actually it is an I (Integral part) - should be rewritten
-    uint16_t PV = AnalogInputs::getADCValue(AnalogInputs::Ismps);
+    uint16_t PV = AnalogInputsADC::getFastADCValue(AnalogInputs::Ismps);
     long error = i_PID_setpoint;
     error -= PV;
     i_PID_MV += error*A;

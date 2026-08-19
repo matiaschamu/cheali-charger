@@ -18,9 +18,15 @@
 #ifndef ANALOG_INPUTS_ADC_H_
 #define ANALOG_INPUTS_ADC_H_
 
+#include <stdint.h>
+
 namespace AnalogInputsADC
 {
     void initialize();
+
+    /* Fast burst-average path used by the CMS power loop. The public
+     * AnalogInputs::getADCValue() path is the slower 256-sample result. */
+    uint16_t getFastADCValue(uint8_t name);
 };
 
 #endif /* ANALOG_INPUTS_ADC_H_ */

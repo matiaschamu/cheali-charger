@@ -314,6 +314,36 @@ Riesgos o anomalías:
 Próximo paso mínimo:
 ```
 
+### 2026-08-19 - Raw ADC oversampleado a 16 bits
+
+- Archivos modificados: `generic/50W/AnalogInputsADC.cpp`,
+  `AnalogInputsADC.h` y `SMPS_PID.cpp`; no se tocó `src/core/`.
+- `[COMPILA]` Cada canal físico acumula bloques de 256 conversiones crudas de
+  12 bits. Al completar el bloque publica en `i_adc_[]` el resultado
+  `(suma + 8) >> 4`, dentro de la escala existente 0..65.520. Por lo tanto,
+  `getADCValue()` y las pantallas `raw`/`power ADC` reciben el valor
+  oversampleado de 16 bits.
+- `[COMPILA]` La ráfaga existente continúa en 70 conversiones. Su promedio
+  redondeado se guarda por separado y el PID CMS lo usa para `Ismps` y el
+  corte de `Vout+`; así el oversampling público no reduce la frecuencia de
+  actualización del control ni cambia la EEPROM/calibración.
+- El oversampling aporta hasta cuatro bits de resolución sólo si el ruido o
+  dither hace recorrer códigos ADC suficientes. No mejora por sí solo offset,
+  referencia, linealidad ni precisión absoluta.
+- `[COMPILA]` Target CMS aislado: imagen de 33.736 bytes, option bytes
+  `EE 36 E0`, SHA-256
+  `6587E8E91DEC40C81D9D5273387A1E21F6EADB70C52C8E310CFB9410494033C8`.
+  BSS: 3.376 bytes de los 8 KiB de SRAM disponibles.
+- `[MEDIDO]` La imagen oversampleada se flasheó con `cms32_flash_safe` y
+  ST-Link a 3,251 V. OpenOCD verificó firmware, confirmó
+  `EEPROM backup matches flash` y reinició el MCU.
+- Backup `eeprom-2026-08-19-before-adc-oversampling.bin`, 1.024 bytes, SHA-256
+  `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[MEDIDO]` El usuario confirmó en `ADC raw test` que la lectura
+  oversampleada funciona en hardware. No se registró todavía una serie de
+  valores por canal, por lo que la resolución efectiva, fluctuación y ganancia
+  real de bits siguen pendientes de caracterización cuantitativa.
+
 ### 2026-08-19 - Suite CMS de pruebas de potencia
 
 - Archivos modificados: `generic/50W/BuckTest.cpp` y `BuckTest.h`. No se
@@ -335,9 +365,14 @@ Próximo paso mínimo:
 - `[COMPILA]` Target CMS aislado: imagen de 33.544 bytes, option bytes
   `EE 36 E0`, SHA-256
   `D569FCC286AEAE9C4B63BF302A32C5C08C2D3275A8696105E8D639532055491D`.
-- `[PENDIENTE]` Flashear con autorización y validar primero la navegación y
-  estados de reposo; después capturar B100->G001 y G001->B100 midiendo P15,
-  P21 y las compuertas de Q9/U8.
+- `[MEDIDO]` El firmware del commit `78cdc7f1` se flasheó mediante
+  `cms32_flash_safe` con ST-Link a 3,249 V. OpenOCD verificó la imagen, confirmó
+  `EEPROM backup matches flash` y reinició el MCU.
+- Backup `eeprom-2026-08-19-before-78cdc7f1.bin`, 1.024 bytes, SHA-256
+  `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[PENDIENTE]` Validar primero la navegación y estados de reposo; después
+  capturar B100->G001 y G001->B100 midiendo P15, P21 y las compuertas de
+  Q9/U8.
 
 ### 2026-08-19 - Actualización continua de duty TM41 preparada
 

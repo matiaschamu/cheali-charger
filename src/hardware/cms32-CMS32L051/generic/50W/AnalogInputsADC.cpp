@@ -15,20 +15,24 @@
  * Conversion loop (driven entirely from the ADC interrupt):
  *   1. ADC IRQ fires after each conversion completes.
  *   2. The first sample of every burst is discarded (input mux settling).
- *   3. The next BURST_COUNT samples are summed into g_adcSum.
- *   4. When the burst finishes, the per-pin result lands in i_adc_[] and
- *      i_avrSum_[]; current_input_ advances to the next slot and the next
- *      conversion is started.
- *   5. After a full round (back to slot 0), finalizeMeasurement() pushes the
+ *   3. The next BURST_COUNT samples are summed into burst_sum_.
+ *   4. The burst average feeds the fast CMS power-control path. In parallel,
+ *      every raw 12-bit conversion is accumulated in a per-channel block of
+ *      256 samples. When that block completes, i_adc_[] receives a genuine
+ *      16-bit-resolution oversampled result.
+ *   5. The burst sum also lands in i_avrSum_[]; current_input_ advances to the
+ *      next slot and the next conversion is started.
+ *   6. After a full round (back to slot 0), finalizeMeasurement() pushes the
  *      SMPS/Discharger set-point readbacks and calls
  *      intterruptFinalizeMeasurement() so the core measurement loop wakes up.
  *
  * Ismps is sampled four times per round (ADC_I_SMPS_PER_ROUND) — the sum is
  * divided by four when the last measurement of the average window lands.
  *
- * ADCR stores the 12-bit result right-aligned in bits 11:0. The core uses a
- * 16-bit-scale representation, so every sample is shifted left by four before
- * it is stored or accumulated.
+ * ADCR stores the 12-bit result right-aligned in bits 11:0. For the slow raw
+ * path, 256 samples are summed and shifted right by four: four additional
+ * resolution bits are available when the input/noise supplies enough code
+ * variation. This improves resolution, not absolute ADC accuracy.
  */
 
 #include "atomic.h"
@@ -55,6 +59,8 @@ extern "C" {
 #define ADC_BURST_DISCARD_SAMPLES   1       /* discard first sample after channel switch */
 #define ADC_RESULT_MASK             0x0FFFU
 #define ADC_RESULT_SHIFT            (ANALOG_INPUTS_RESOLUTION - ANALOG_INPUTS_ADC_RESOLUTION_BITS)
+#define ADC_OVERSAMPLE_COUNT        256U    /* 4^(16 - 12) samples for +4 bits */
+#define ADC_OVERSAMPLE_SHIFT        4U
 
 
 namespace AnalogInputsADC {
@@ -98,6 +104,12 @@ static volatile uint8_t burst_count_     = 0;
 static volatile uint32_t burst_sum_      = 0;
 static volatile uint8_t addSumToInput_   = 0;  /* latched at start of every round */
 
+/* The core's i_adc_[] now exposes these completed 256-sample blocks. A
+ * separate burst average keeps the PID/protection response at its old rate. */
+static volatile uint32_t oversample_sum_[AnalogInputs::PHYSICAL_INPUTS];
+static volatile uint16_t oversample_count_[AnalogInputs::PHYSICAL_INPUTS];
+static volatile uint16_t fast_adc_[AnalogInputs::PHYSICAL_INPUTS];
+
 
 static inline uint8_t nextInput(uint8_t i) {
     i++;
@@ -124,6 +136,17 @@ static void startConversion(uint8_t input_idx)
     ADC->ADM0 |= ADCS;   /* kick off conversion */
 }
 
+uint16_t getFastADCValue(uint8_t name)
+{
+    if(name >= AnalogInputs::PHYSICAL_INPUTS) return 0;
+
+    uint16_t value;
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        value = fast_adc_[name];
+    }
+    return value;
+}
+
 static void finalizeMeasurement()
 {
     AnalogInputs::i_adc_[AnalogInputs::IsmpsSet]      = SMPS::getValue();
@@ -143,6 +166,12 @@ static void finalizeMeasurement()
 
 void initialize()
 {
+    for(uint8_t i = 0; i < AnalogInputs::PHYSICAL_INPUTS; i++) {
+        oversample_sum_[i] = 0;
+        oversample_count_[i] = 0;
+        fast_adc_[i] = 0;
+    }
+
     /* Disable IRQ + ADC before reconfiguring. */
     NVIC_DisableIRQ((IRQn_Type)ADC_IRQn);
     CGC->PER0 |= CGC_PER0_ADCEN_Msk;            /* enable ADC peripheral clock */
@@ -217,19 +246,43 @@ extern "C" void IRQ21_Handler(void)
     using namespace AnalogInputsADC;
 
     /* [MANUAL] ADCR[11:0] contains the right-aligned conversion result. */
-    uint16_t sample = (uint16_t)((ADC->ADCR & ADC_RESULT_MASK) << ADC_RESULT_SHIFT);
+    uint16_t raw_sample = (uint16_t)(ADC->ADCR & ADC_RESULT_MASK);
+    uint16_t sample = (uint16_t)(raw_sample << ADC_RESULT_SHIFT);
+    AnalogInputs::Name name = order_analogInputs_on[current_input_].ai_name_;
 
     /* Drop the very first sample of every burst (channel switch settling). */
     if(burst_count_ >= ADC_BURST_DISCARD_SAMPLES) {
         burst_sum_ += sample;
+
+        uint32_t sum = oversample_sum_[name] + raw_sample;
+        uint16_t count = oversample_count_[name] + 1;
+        oversample_sum_[name] = sum;
+        oversample_count_[name] = count;
+
+        /* Avoid an initial zero until the first complete block is ready. Once
+         * a block completes, keep its result stable until the next one. */
+        if(count == 1 && AnalogInputs::i_adc_[name] == 0) {
+            AnalogInputs::i_adc_[name] = sample;
+        }
+
+        if(count >= ADC_OVERSAMPLE_COUNT) {
+            /* sum / 16 converts 256 x 12-bit codes to the existing 16-bit
+             * scale. Add half a divisor for rounding to the nearest code. */
+            AnalogInputs::i_adc_[name] = (uint16_t)
+                    ((sum + (1U << (ADC_OVERSAMPLE_SHIFT - 1)))
+                     >> ADC_OVERSAMPLE_SHIFT);
+            oversample_sum_[name] = 0;
+            oversample_count_[name] = 0;
+        }
     }
     burst_count_++;
 
     if(burst_count_ >= ANALOG_INPUTS_ADC_BURST_COUNT + ADC_BURST_DISCARD_SAMPLES) {
-        /* Burst complete — store the last sample as the instantaneous value
-         * and accumulate the burst sum into the averaging buffer. */
-        AnalogInputs::Name name = order_analogInputs_on[current_input_].ai_name_;
-        AnalogInputs::i_adc_[name] = sample;
+        /* Burst complete: publish a rounded fast average for the power loop
+         * and retain the existing long averaging path for calibration. */
+        fast_adc_[name] = (uint16_t)
+                ((burst_sum_ + ANALOG_INPUTS_ADC_BURST_COUNT / 2U)
+                 / ANALOG_INPUTS_ADC_BURST_COUNT);
         if(addSumToInput_) {
             AnalogInputs::i_avrSum_[name] += burst_sum_;
         }
