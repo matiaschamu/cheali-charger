@@ -10,7 +10,7 @@
 /*
  * Manual buck-converter exerciser.
  *
- * Drives a hardware PWM on P15 via TM41 ch0/ch1 (TO11) at ~30 kHz.
+ * Drives hardware PWM on P15 via TM41 ch0/ch1 (TO11) at ~60 kHz.
  *  - INC / DEC  : ±1 % duty (auto-repeat / speed factor for fast scrolling)
  *  - START      : toggle output ON/OFF (gates PWM and OUTPUT_DISABLE_PIN)
  *  - STOP       : exit (PWM stopped, output disabled, duty reset)

@@ -314,6 +314,202 @@ Riesgos o anomalías:
 Próximo paso mínimo:
 ```
 
+### 2026-08-19 - PID adaptado al PWM único y selectores CMS
+
+- Archivos modificados: `generic/50W/SMPS_PID.cpp` y `imaxB6.cpp`.
+- `[COMPILA]` El control normal usa exclusivamente TM41/TO11/P15 para buck,
+  boost y descarga. El valor `pin` pasado a `outputPWM` es ahora P15 y no los
+  alias heredados de canales Nuvoton.
+- `[COMPILA]` Cada rama de `setPID_MV()` escribe explícitamente P21: bajo para
+  buck y alto para boost. Cuando cambia la topología, primero detiene P15,
+  luego cambia P21 y finalmente aplica el nuevo duty. Esto corrige el estado
+  boost pegado al regresar a buck.
+- `[COMPILA]` P20 queda alto durante carga y reposo y bajo sólo durante
+  descarga. Apagar carga o descarga fuerza P15 bajo y P21 bajo. P00 continúa
+  controlado únicamente por `setBatteryOutput()` como corte general.
+- `[COMPILA]` Se retiraron tanto las escrituras de ejecución como la
+  configuración `OUTPUT` de los placeholders P23 (`SMPS_DISABLE_PIN`), P24
+  (`DISCHARGE_VALUE_PIN`) y P26 (`SMPS_VALUE_BOOST_PIN`). Las definiciones se
+  conservan sólo para compatibilidad de cabeceras; ningún `.cpp` CMS las usa.
+- Target CMS aislado compilado: `.bin` de 31.872 bytes, option bytes
+  `EE 36 E0`, SHA-256
+  `A8F3D95A9184C087333BEE42EBB43DCFFF62CBDE1A68CFA0B759A1C698B4736F`.
+  `git diff --check` sin errores.
+- `[MEDIDO]` Se flasheó mediante `cms32_flash_safe` con ST-Link a 3,242 V.
+  OpenOCD verificó firmware, confirmó `EEPROM backup matches flash` y reinició
+  el MCU. Backup `eeprom-2026-08-19-before-f2c3c8ce.bin` de 1.024 bytes,
+  SHA-256 `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[PENDIENTE]` Antes del lazo cerrado se debe comprobar en hardware la
+  secuencia P15/P21 al cruzar buck↔boost y resolver la actualización de duty
+  que todavía reinicia TM41 en cada llamada.
+
+### 2026-08-18 - Interpretación de P15, P20, P21 y transistores asociados
+
+- `[ESQUEMA]` P15 es la modulación común. Una rama por R13 llega al driver
+  complementario Q3/Q4 del MOSFET NCE4435 (Q9, conmutador buck); otra rama por
+  R11 alimenta la lógica de diodos asociada a P21 y la entrada de Q2.
+- `[ESQUEMA][MEDIDO]` P21 es el selector buck/boost. En buck permanece bajo y
+  bloquea el driver Q5/Q6 de U8 (NCE6050KA); en boost se lleva alto para que
+  esa rama pueda conmutar U8. La forma exacta en que mantiene Q9 durante boost
+  debe confirmarse midiendo las compuertas de Q9 y U8 simultáneamente.
+- `[ESQUEMA]` Q2 es un MOSFET pequeño de pre-driver, no el transistor de
+  potencia. Recibe la rama PWM de P15 y gobierna el nodo de entrada del par
+  complementario V22/V39, cuya salida maneja la compuerta de U9 (NCE0110AK).
+- `[ESQUEMA]` P20, mediante R10 y Q1, fuerza/clampa ese nodo de pre-driver. Con
+  P20 alto Q1 conduce y anula la rama de U9, coherente con modo carga; con P20
+  bajo Q1 se libera, coherente con habilitar la ruta de descarga. La polaridad
+  y el PWM efectivo sobre U9 durante descarga siguen `[PENDIENTE]` de medición.
+- `[ESQUEMA]` Q10 no pertenece a la conversión de potencia. Su base viene de
+  P27 por R29=510 ohm, su rama superior va a 5P por R33=470 ohm y la inferior a
+  masa. P27 también es D4 del LCD. Tal como está dibujado, Q10 sólo introduce
+  una carga conmutada sobre esa línea y no entrega una salida a otro bloque;
+  su finalidad exacta o una posible inexactitud del esquema inverso quedan
+  `[PENDIENTE]` y no deben mezclarse con P15/P20/P21.
+- Próximo paso mínimo: con carga limitada, observar simultáneamente P15 y las
+  compuertas de Q9/U8 para buck y boost. Dejar U9/descarga para una prueba
+  separada después de confirmar el estado impuesto por P20.
+
+### 2026-08-18 - Auditoría de control P15/P21/P20/P00 en firmware
+
+- `[COMPILA][MEDIDO]` `outputPWM.cpp` posee un solo canal real: cualquier
+  llamada a `setPWM()` o `disablePWM()`, sin importar el argumento `pin`, actúa
+  sobre TM41/TO11/P15. Cero y deshabilitado fuerzan P15 bajo; escala completa
+  fuerza P15 alto; valores intermedios generan PWM de 60 kHz.
+- `[COMPILA][MEDIDO]` P21 se usa como GPIO selector: bajo=buck, alto=boost. P20
+  se usa como GPIO de modo: alto=carga, bajo=descarga. P00 es corte de salida
+  activo alto: alto=salida desconectada, bajo=salida conectada.
+- En arranque y en `BuckTest` la secuencia queda segura: P00 alto, P15 bajo,
+  P21 bajo y P20 alto al estar apagado. Al iniciar la prueba, P00 baja, P20 se
+  mantiene alto, P21 selecciona el modo y P15 entrega PWM.
+- `[PENDIENTE]` El `SMPS_PID.cpp` del CMS es idéntico al de Nuvoton M051 y no
+  fue adaptado a la arquitectura de PWM único. En Nuvoton/AVR los argumentos
+  buck y boost seleccionan canales físicos distintos; en CMS ambos terminan en
+  P15 y la selección depende de P21.
+- `[PENDIENTE][RIESGO]` En el PID CMS, entrar a boost ejecuta P21=alto, pero la
+  rama posterior de buck sólo apaga el placeholder P26 y no devuelve P21 a
+  bajo. Por ello una transición boost->buck puede dejar seleccionada la
+  topología boost mientras P15 recibe el duty calculado como buck.
+- `[PENDIENTE]` El código normal todavía escribe los placeholders P23
+  (`SMPS_DISABLE_PIN`), P24 (`DISCHARGE_VALUE_PIN`) y P26
+  (`SMPS_VALUE_BOOST_PIN`). El argumento ignorado de `outputPWM` hace que P24
+  module realmente P15, pero las escrituras GPIO a P23/P26 no representan el
+  hardware CMS y deben eliminarse de la ruta específica.
+- Comparación: AVR usa dos salidas Timer1 (buck en pin 13 y boost/descarga en
+  pin 14); Nuvoton M051 usa PWM P2.6 para buck y P2.1 compartido para
+  boost/descarga. P00 y P20 tienen equivalentes funcionales en esos ports
+  (`OUTPUT_DISABLE` y `DISCHARGE_DISABLE` activos altos para deshabilitar),
+  pero el selector dedicado P21 y el PWM común P15 son particulares de esta
+  placa CMS.
+- Próximo cambio mínimo propuesto: adaptar sólo el `SMPS_PID.cpp` CMS para
+  usar explícitamente `setTopology(false/true)`, P15 como único PWM y P20 como
+  selector carga/descarga, sin escribir P23/P24/P26 como GPIO reales.
+
+### 2026-08-17 - Diagnóstico TM41 corregido, compilado y flasheado
+
+- Archivos modificados: `generic/50W/outputPWM.cpp`, `BuckTest.cpp` y
+  `BuckTest.h`.
+- `[MEDIDO]` Con el firmware de diagnóstico, la pantalla confirmó
+  `TDR10=799` y TDR11 coherente con el duty pedido (aproximadamente 7, 15, 40
+  y 80 para 1, 2, 5 y 10 %). En P15 se midieron respectivamente 2,056; 2,018;
+  2,91 y 3,86 us. Los anchos teóricos por registro son 0,146; 0,313; 0,833 y
+  1,667 us: persiste un exceso cercano a 2 us fuera del cálculo de duty.
+- `[MEDIDO][ESQUEMA]` El menú sólo reinicia TM41 al pulsar INC/DEC, no en cada
+  iteración. P15/TO11 está cargado en placa por R13=510 ohm y la etapa bipolar
+  Q5/Q6 que maneja la compuerta de U8 (NCE6050KA); por lo tanto la medida en el
+  nodo y sus flancos deben caracterizarse antes de atribuir el offset al silicio.
+- `[PENDIENTE]` Medir en P15 Vmin, Vmax, tiempo de subida, tiempo de bajada y
+  ancho a un umbral fijo del 50 %. Si la forma es limpia, preparar una imagen
+  diagnóstica que permita `TDR11=0` manteniendo TM41 activo: distinguirá un
+  pulso mínimo del periférico de una deformación eléctrica.
+- `[COMPILA][MEDIDO]` A pedido del usuario se preparó una variante temporal
+  que enruta TO11 a P00 y fuerza P15 a nivel bajo. P00 deja de cumplir su rol
+  normal de corte de batería; esta imagen sólo sirve para comparar el ancho de
+  pulso y no debe utilizarse para carga ni operación normal.
+- La variante P00 produjo un `.bin` de 31.848 bytes, option bytes `EE 36 E0` y
+  SHA-256 `1B38E302D77D60F715E1425378F969DDDAB9B258DF76A6AD4954A142AE351B6E`.
+  Se cargó con `cms32_flash_safe`, ST-Link a 3,268 V; OpenOCD verificó el
+  firmware, confirmó `EEPROM backup matches flash` y reinició el MCU. Backup
+  de 1.024 bytes `eeprom-2026-08-17-before-p00-pwm-diagnostic.bin`, SHA-256
+  `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[MEDIDO]` Con ST-Link desconectado, P00 midió 5 V con PWM apagado; 1 % =
+  142 ns, 2 % = 310 ns, 5 % = 830 ns, 10 % = 1,66 us, 99 % = 16,43 us y
+  100 % = 5 V constante. Los valores coinciden con `TDR11/48 MHz` dentro de la
+  resolución de medición. Los estados apagado/100 % altos son intencionales en
+  esta imagen para mantener activo el corte normalmente gobernado por P00.
+- `[MEDIDO]` Queda descartado un offset de aproximadamente 2 us en TM41 y no
+  se encontró la supuesta errata del timer. El exceso observado anteriormente
+  es específico de P15 o de la etapa R13/Q5/Q6/U8 conectada a ese pin.
+- `[PENDIENTE]` Restaurar TO11 a P15 antes de cualquier prueba del convertidor.
+  Luego comparar simultáneamente el pin del MCU, ambos lados de R13 y la
+  compuerta de U8 para localizar dónde aparece el alargamiento.
+- `[COMPILA][MEDIDO]` Tras validar TM41 por P00 se restauró el ruteo normal TO11/P15,
+  conservando TDR11 sin compensación, escrituras directas de TS1/TT1 y el
+  reinicio sincronizado usado por el menú manual de diagnóstico.
+- La imagen P15 restaurada mide 31.852 bytes, contiene option bytes `EE 36 E0`
+  y tiene SHA-256
+  `DCC31422A08C6FC800A966717571BF855C78DA009EB5F0CCA499D9329C1DF407`.
+  Se cargó con ST-Link a 3,251 V mediante `cms32_flash_safe`; OpenOCD verificó
+  firmware y EEPROM antes de reiniciar. El backup
+  `eeprom-2026-08-17-before-p15-restored.bin` mide 1.024 bytes y conserva el
+  SHA-256 `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- `[MANUAL][COMPILA]` El port configura TM41 directamente mientras está
+  detenido, usa `TDR11=high_ticks`, escribe `TS1/TT1` directamente y arranca
+  maestro/esclavo juntos. Durante este bring-up cada cambio manual reinicia el
+  timer para evitar una actualización asíncrona de TDR11.
+- El menú muestra los registros efectivos: primera línea `buck P nnnn` o
+  `boost P nnnn` para TDR10; segunda línea `ON d nnn T nnnn` para duty pedido y
+  TDR11. Las líneas tienen 16 caracteres completos para evitar residuos.
+- `[PENDIENTE]` La parada/reconfiguración en cada cambio es apropiada para el
+  diagnóstico manual, pero no para el lazo cerrado. Antes de integrar el PID se
+  debe implementar una actualización TDR11 sincronizada con el evento maestro.
+- `[COMPILA]` Target aislado: 31.808 bytes de texto, 32 de data y 3.244 de BSS;
+  `.bin` de 31.840 bytes, option bytes `EE 36 E0`, SHA-256
+  `B04477732E1E88087949C6840AFAEB027BF25AF4D748E194719898CBA4771C0F`.
+- `[MEDIDO]` Firmware cargado mediante `cms32_flash_safe` con ST-Link a 3,268 V.
+  OpenOCD verificó firmware y confirmó `EEPROM backup matches flash` antes del
+  reset. Backup final de 1024 bytes con SHA-256
+  `0420E37F5266CD02128B508ABF50BAC8A41EC227D1897FC28B69607EE731BE54`.
+- Próximo paso mínimo: desconectar ST-Link, repetir buck a 1, 2, 5 y 10 % y
+  registrar TDR10/TDR11 visibles junto al ancho de P15.
+
+### 2026-08-17 - Primera prueba buck: duty real no coincide con el solicitado
+
+- Montaje: entrada a 12 V, límite de fuente de 600 mA, prueba manual buck con
+  carga de banco y medición de salida/PWM; pack y ST-Link desconectados.
+- `[MEDIDO]` Duty solicitado 0 %: salida 0 V y consumo de entrada 70 mA.
+- `[MEDIDO]` Duty solicitado 5 %: osciloscopio indicó 17,4 %, salida 6,4 V y
+  consumo de entrada 140 mA.
+- `[MEDIDO]` Duty solicitado 10 %: osciloscopio indicó 23,1 %, salida 8,05 V y
+  consumo de entrada 150 mA.
+- `[MEDIDO]` Anchos de pulso informados: 1 % -> 2,0450 us; 2 % -> 1,96 us;
+  5 % -> 2,89 us; 10 % -> 3,84 us. Entre 5 % y 10 % el pulso aumenta 0,95 us,
+  pero 1 % y 2 % no son monótonos.
+- Los datos son compatibles con un componente de ancho cercano a 2 us más una
+  parte variable, o con una medición posterior al MCU. No corregir la escala
+  del timer hasta conocer la frecuencia, amplitud y punto exacto de sonda.
+- `[MANUAL]` La sección 5.9.3 del manual define el duty como
+  `TDR_slave / (TDR_master + 1)`. Con período 800, el código actual debería
+  entregar aproximadamente 4,875 % y 9,875 %; la compensación de un tick no
+  explica la diferencia medida.
+- `[MANUAL]` La sección específica 5.9.2 declara `TDR_slave=0` como 0 % y exige
+  que las actualizaciones durante marcha se hagan inmediatamente después del
+  evento del maestro. El port resta una cuenta y actualiza `TDR11` de forma
+  asíncrona; ambos comportamientos deben corregirse.
+- `[COMPILA]` La desensamblación del firmware flasheado confirma que el binario
+  calcula y escribe TDR11=6, 14, 39 y 79 para 1, 2, 5 y 10 %, respectivamente,
+  con TDR10=799. No hay un offset de 100 cuentas introducido por la aritmética
+  C++ o por el compilador.
+- La documentación oficial disponible y el ejemplo de Timer4 publicado con el
+  driver del fabricante no registran una errata de aproximadamente 2 us. Sí se
+  encontró que las funciones vendor de inicio/parada hacen lectura-modificación-
+  escritura (`TS1 |=` / `TT1 |=`) sobre registros de disparo, aunque el manual
+  prescribe escribir directamente los bits de comando.
+- `[PENDIENTE]` No probar boost aún. Confirmar que la sonda estuvo directamente
+  en P15 y registrar nivel bajo, nivel alto y tiempos de subida/bajada. Agregar
+  temporalmente lectura visible de TDR10/TDR11 al menú, reemplazar el acceso RMW
+  a TS1/TT1 por escritura directa y seguir la secuencia de parada/configuración/
+  arranque del manual antes de repetir la medición.
+
 ### 2026-08-17 - Los siete canales de balance responden con pack 6S
 
 - Verificación previa del pack 6S, referida a su negativo: 0,000; 3,930;

@@ -15,6 +15,10 @@
 #include "LcdPrint.h"
 #include "LiquidCrystal.h"
 
+extern "C" {
+#include "CMS32L051.h"
+}
+
 namespace BuckTest {
 
 enum Mode : uint8_t { MODE_BUCK = 0, MODE_BOOST = 1 };
@@ -73,13 +77,16 @@ static void toggle_mode()
 static void draw()
 {
     lcdSetCursor0_0();
-    lcdPrint(mode_ == MODE_BUCK ? "buck test       "
-                                : "boost test      ", 16);
+    lcdPrint(mode_ == MODE_BUCK ? "buck P " : "boost P", 7);
+    lcdPrintUnsigned(TM41->TDR10, 4);
+    lcdPrintSpaces(5);
 
     lcdSetCursor0_1();
-    lcdPrint(enabled_ ? "ON  duty:" : "off duty:", 9);
+    lcdPrint(enabled_ ? "ON d " : "off d", 5);
     lcdPrintUnsigned(duty_pct_, 3);
-    lcdPrint("%   ", 4);
+    lcdPrint(" T", 2);
+    lcdPrintUnsigned(TM41->TDR11, 4);
+    lcdPrintSpaces(2);
 }
 
 /* ------------------------------------------------------------------

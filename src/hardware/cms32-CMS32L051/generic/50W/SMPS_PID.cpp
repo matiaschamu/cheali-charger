@@ -1,5 +1,6 @@
 #include "Hardware.h"
 #include "SMPS_PID.h"
+#include "imaxB6.h"
 #include "IO.h"
 #include "AnalogInputs.h"
 #include "outputPWM.h"
@@ -12,6 +13,40 @@ namespace {
     volatile uint16_t i_PID_CutOffVoltage;
     volatile long i_PID_MV;
     volatile bool i_PID_enable;
+
+    /* This board has one physical power PWM: TM41/TO11 on P15.  The `pin`
+     * parameter remains in outputPWM only for API compatibility with the
+     * multi-channel AVR/Nuvoton ports. */
+    static constexpr uint8_t POWER_PWM_PIN = CMS32_PIN(1, 5);
+    bool power_topology_boost = false;
+
+    void stopPowerPWM()
+    {
+        outputPWM::disablePWM(POWER_PWM_PIN);
+    }
+
+    void setPowerPWM(uint16_t value)
+    {
+        outputPWM::setPWM(POWER_PWM_PIN, value);
+    }
+
+    /* P21 must only change while P15 is inactive.  Always write P21 so a
+     * previous boost state cannot leak into the following buck update. */
+    void selectPowerTopology(bool boost)
+    {
+        if (power_topology_boost != boost) {
+            stopPowerPWM();
+        }
+        hardware::setTopology(boost);
+        power_topology_boost = boost;
+    }
+
+    void forcePowerIdle()
+    {
+        stopPowerPWM();
+        hardware::setTopology(false);   /* P21 LOW = buck/safe idle */
+        power_topology_boost = false;
+    }
 }
 
 #define A 4
@@ -67,32 +102,17 @@ void SMPS_PID::init(uint16_t Vin, uint16_t Vout)
 
 }
 
-namespace {
-    void enableChargerBuck() {
-        outputPWM::disablePWM(SMPS_VALUE_BUCK_PIN);
-        IO::digitalWrite(SMPS_VALUE_BUCK_PIN, 1);
-    }
-    void disableChargerBuck() {
-        outputPWM::disablePWM(SMPS_VALUE_BUCK_PIN);
-        IO::digitalWrite(SMPS_VALUE_BUCK_PIN, 0);
-    }
-    void disableChargerBoost() {
-        outputPWM::disablePWM(SMPS_VALUE_BOOST_PIN);
-        IO::digitalWrite(SMPS_VALUE_BOOST_PIN, 0);
-    }
-}
-
 void SMPS_PID::setPID_MV(uint16_t value) {
     if(value > MAX_PID_MV)
         value = MAX_PID_MV;
 
     if(value <= OUTPUT_PWM_PRECISION_PERIOD) {
-        disableChargerBoost();
-        outputPWM::setPWM(SMPS_VALUE_BUCK_PIN, value);
+        selectPowerTopology(false);     /* P21 LOW = buck */
+        setPowerPWM(value);             /* P15 = buck duty */
     } else {
-        enableChargerBuck();
+        selectPowerTopology(true);      /* P21 HIGH = boost */
         uint16_t v2 = value - OUTPUT_PWM_PRECISION_PERIOD;
-        outputPWM::setPWM(SMPS_VALUE_BOOST_PIN, v2);
+        setPowerPWM(v2);                /* P15 = boost duty */
     }
 }
 
@@ -127,10 +147,11 @@ void hardware::setChargerOutput(bool enable)
     if(enable) setDischargerOutput(false);
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         i_PID_enable = false;
-        disableChargerBuck();
-        disableChargerBoost();
+        forcePowerIdle();
     }
-    IO::digitalWrite(SMPS_DISABLE_PIN, !enable);
+    /* P20 HIGH keeps the discharge path blocked both while charging and in
+     * idle.  P00 remains independently controlled by setBatteryOutput(). */
+    setChargerMode(true);
     if(enable) {
         SMPS_PID::init(AnalogInputs::getRealValue(AnalogInputs::Vin), AnalogInputs::getRealValue(AnalogInputs::Vout_plus_pin));
     }
@@ -139,12 +160,23 @@ void hardware::setChargerOutput(bool enable)
 
 void hardware::setDischargerOutput(bool enable)
 {
-    if(enable) setChargerOutput(false);
-    IO::digitalWrite(DISCHARGE_DISABLE_PIN, !enable);
+    if(enable) {
+        setChargerOutput(false);
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            forcePowerIdle();
+        }
+        setChargerMode(false);           /* P20 LOW = discharge path */
+    } else {
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            forcePowerIdle();
+        }
+        setChargerMode(true);            /* P20 HIGH = discharge blocked */
+    }
 }
 
 void hardware::setDischargerValue(uint16_t value)
 {
-    outputPWM::setPWM(DISCHARGE_VALUE_PIN, value);
+    selectPowerTopology(false);          /* discharge uses the non-boost path */
+    setPowerPWM(value);                  /* shared P15 PWM */
 }
 

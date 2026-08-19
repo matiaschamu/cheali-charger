@@ -39,6 +39,8 @@ static constexpr uint16_t TM41_PWM_PERIOD_TICKS = 800;
 
 /* External value scale exposed to SMPS_PID is 0..OUTPUT_PWM_PRECISION_PERIOD. */
 static constexpr uint32_t VALUE_FULL_SCALE = OUTPUT_PWM_PRECISION_PERIOD;
+static constexpr uint16_t TM41_PWM_CHANNEL_MASK =
+        (uint16_t)(TM4_CHANNEL_0 | TM4_CHANNEL_1);
 
 static bool pwm_running_ = false;
 
@@ -52,9 +54,10 @@ static uint16_t value_to_ticks(uint32_t value)
 
 static void p15_drive(uint8_t high)
 {
-    PORT->P15CFG  = 0x00;         /* alt fn GPIO */
-    PORT->PMC1   &= ~(1u << 5);   /* digital     */
-    PORT->PM1    &= ~(1u << 5);   /* output      */
+    PORT->P15CFG  = 0x00;         /* GPIO             */
+    PORT->PMC1   &= ~(1u << 5);   /* digital          */
+    PORT->PM1    &= ~(1u << 5);   /* output           */
+    PORT->POM1   &= ~(1u << 5);   /* normal push-pull */
     if (high) PORT->P1 |=  (1u << 5);
     else      PORT->P1 &= ~(1u << 5);
 }
@@ -62,15 +65,57 @@ static void p15_drive(uint8_t high)
 static void p15_drive_low()  { p15_drive(0); }
 static void p15_drive_high() { p15_drive(1); }
 
-/* Route P15 to TM41/TO11 (vendor macro from userdefine.h is `static` so
- * we replicate it here). */
+/* [MANUAL] Output functions can be assigned through PxxCFG; 0x02 selects
+ * TO11. The board schematic connects the PWM driver to P15. */
 static void p15_route_pwm()
 {
     PORT->P15CFG  = 0x02;             /* allocate TO11 to P15 */
     PORT->P1     &= ~(1u << 5);       /* output low default   */
     PORT->PM1    &= ~(1u << 5);       /* output mode          */
-    PORT->POM1   &= ~(1u << 5);       /* normal output        */
+    PORT->POM1   &= ~(1u << 5);       /* normal push-pull     */
     PORT->PMC1   &= ~(1u << 5);       /* digital              */
+}
+
+/* TS1/TT1 are command registers.  The manual specifies a direct write of the
+ * channel bits; read-modify-write is not valid for these trigger registers. */
+static void tm41_stop_pwm()
+{
+    TM41->TT1 = TM41_PWM_CHANNEL_MASK;
+    pwm_running_ = false;
+}
+
+/* Configure both channels while stopped, then start master and slave with one
+ * direct TS1 write.  This intentionally restarts the timer for every manual
+ * duty change during bring-up, avoiding an unsynchronised TDR11 update. */
+static void tm41_start_pwm(uint16_t high_ticks)
+{
+    CGC->PER0 |= CGC_PER0_TM41EN_Msk;
+    TM41->TT1 = TM41_PWM_CHANNEL_MASK;
+
+    TM41->TPS1 = _0000_TM4_CKM3_fCLK_8 |
+                 _0000_TM4_CKM2_fCLK_1 |
+                 _0000_TM4_CKM1_fCLK_0 |
+                 _0000_TM4_CKM0_fCLK_0;
+
+    TM41->TMR10 = _8000_TM4_CLOCK_SELECT_CKM1 |
+                  _0000_TM4_TRIGGER_SOFTWARE |
+                  _0001_TM4_MODE_PWM_MASTER;
+    TM41->TDR10 = TM41_PWM_PERIOD_TICKS - 1;
+    TM41->TO1  &= ~_0001_TM4_CH0_OUTPUT_VALUE_1;
+    TM41->TOE1 &= ~_0001_TM4_CH0_OUTPUT_ENABLE;
+
+    TM41->TMR11 = _8000_TM4_CLOCK_SELECT_CKM1 |
+                  _0400_TM4_TRIGGER_MASTER_INT |
+                  _0009_TM4_MODE_PWM_SLAVE;
+    TM41->TDR11 = high_ticks;
+    TM41->TOM1 |=  _0002_TM4_CH1_SLAVE_OUTPUT;
+    TM41->TOL1 &= ~_0002_TM4_CH1_OUTPUT_LEVEL_L;
+    TM41->TO1  &= ~_0002_TM4_CH1_OUTPUT_VALUE_1;
+    TM41->TOE1 |=  _0002_TM4_CH1_OUTPUT_ENABLE;
+
+    p15_route_pwm();
+    TM41->TS1 = TM41_PWM_CHANNEL_MASK;
+    pwm_running_ = true;
 }
 
 void initialize(void)
@@ -82,59 +127,32 @@ void initialize(void)
 /*
  * Set output PWM duty.
  *
- * The slave channel's TDR is "high-time minus one tick" on this chip:
- * the timer underflow that ends the high pulse fires after TDR+1
- * counts. A naive TDR = high_ticks therefore stretches the pulse by
- * one tick (~21 ns with the 48 MHz timer clock) and TDR = 0 still emits a
- * 1-tick spike
- * instead of a true zero.
- *
- * Handle 0 % and full-scale explicitly — disable the PWM output and
- * drive P15 as a plain GPIO at the requested level. For the actual
- * generator gets used in between (1..period-1 high ticks) compensate
- * the +1 offset so the measured duty matches the input value.
+ * [MANUAL] Duty is TDR11/(TDR10+1), with TDR11=0 documented as 0 %.
+ * Keep the explicit GPIO handling at the endpoints so 0 % and 100 % cannot
+ * produce transition spikes. Intermediate values use TDR11=high_ticks.
  */
 void setPWM(uint8_t /*pin*/, uint32_t value)
 {
     uint16_t high = value_to_ticks(value);
 
     if (high == 0) {
-        if (pwm_running_) {
-            TM41_Channel_Stop((tm4_channel_t)(TM4_CHANNEL_0 | TM4_CHANNEL_1));
-            pwm_running_ = false;
-        }
+        if (pwm_running_) tm41_stop_pwm();
         p15_drive_low();
         return;
     }
 
     if (high >= TM41_PWM_PERIOD_TICKS) {
-        if (pwm_running_) {
-            TM41_Channel_Stop((tm4_channel_t)(TM4_CHANNEL_0 | TM4_CHANNEL_1));
-            pwm_running_ = false;
-        }
+        if (pwm_running_) tm41_stop_pwm();
         p15_drive_high();
         return;
     }
 
-    if (!pwm_running_) {
-        TM41_PWM_1Period_1Duty(TM41_PWM_PERIOD_TICKS, high - 1);
-        /* TM41_PWM_1Period_1Duty re-runs its TO11_PORT_SETTING macro so
-         * the alt-function routing is already correct here. */
-        pwm_running_ = true;
-    } else {
-        TM41->TDR11 = high - 1;
-        /* If we were just driving the pin manually (after a 0/full call),
-         * re-route P15 back to TO11. */
-        p15_route_pwm();
-    }
+    tm41_start_pwm(high);
 }
 
 void disablePWM(uint8_t /*pin*/)
 {
-    if (pwm_running_) {
-        TM41_Channel_Stop((tm4_channel_t)(TM4_CHANNEL_0 | TM4_CHANNEL_1));
-        pwm_running_ = false;
-    }
+    if (pwm_running_) tm41_stop_pwm();
     p15_drive_low();
 }
 
