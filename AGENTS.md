@@ -332,6 +332,11 @@ Próximo paso mínimo:
   químicas y estados de conexión; define `C/D/B/W/N`, `m/b/B`, iconos de
   bleed, unidades y las cuentas de `batt. R`, resistencia por celda y
   `wires R` en mΩ.
+- `[CÓDIGO][COMPILA]` Se amplió el capítulo PID con el recorrido completo desde
+  la corriente solicitada hasta P15/P21: límites y rampa de 140 mA por llamada,
+  calibraciones `IsmpsSet`/`Ismps`, burst ADC rápido, integrador Q8, saturación,
+  precarga Vin/Vout, cruce buck 100 % a boost 0 %, cuantización TM41, cutoff,
+  interacción con Thévenin/balanceo y lectura de `PID debug`.
 - `[CÓDIGO][RIESGO]` La revisión registró casos que no deben confundirse con
   funciones validadas: `D/C cycles=0` desborda a 255; la histéresis térmica de
   descarga usa una variable local no inicializada; NiZn no exige balanceador

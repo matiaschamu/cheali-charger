@@ -718,119 +718,620 @@ La pantalla previa usa el límite más estricto de 0,5 V.
 
 ## 14. De la consigna al PID, buck y boost
 
-### 14.1 Nivel alto
-
-`SMPS::trySetIout(I)`:
-
-1. limita corriente y potencia;
-2. limita cada cambio a unos 140 mA (`0,7 * 200 mA`);
-3. convierte mA a raw con `IsmpsSet`;
-4. recorta raw a 60000;
-5. entrega setpoint al controlador rápido;
-6. reinicia estabilidad de mediciones.
-
-### 14.2 Controlador integral
-
-Aunque se llama PID, implementa sólo I:
+El control tiene dos lazos de velocidades diferentes:
 
 ```text
-error = setpoint_raw - Ismps_fast_raw
-integrador = integrador + 4 * error
+Programa / Thévenin / CC-CV                    lazo exterior, lento
+        |
+        | corriente solicitada en mA
+        v
+SMPS::trySetIout()                             límites y calibración
+        |
+        | setpoint raw IsmpsSet
+        v
+SMPS_PID::update()                             lazo interior, rápido
+        |
+        | MV = variable manipulada 0...49140
+        v
+selección buck/boost + PWM TM41 en P15         etapa física
 ```
 
-Usa ocho bits fraccionales y limita la variable manipulada:
+El lazo exterior decide **cuánta corriente conviene pedir** según química, tensión total, tensión de cada celda, resistencia estimada, potencia y fase CC/CV. El lazo interior intenta que la lectura rápida de corriente siga esa consigna raw. Por lo tanto:
+
+- no hay un PID rápido de tensión;
+- la regulación CV se obtiene porque Thévenin reduce la consigna de corriente;
+- el límite rápido de Vout+ es una protección, no un lazo CV;
+- balanceo y Thévenin pueden congelar o cambiar la consigna, pero el integrador rápido continúa regulando el último valor recibido mientras permanezca habilitado.
+
+### 14.1 Qué es realmente el “PID”
+
+`[CÓDIGO]` El nombre histórico es `SMPS_PID`, pero el controlador actual sólo tiene término integral:
 
 ```text
-0 <= MV <= 1,5 * 32760 = 49140
+P = 0
+I = activo
+D = 0
 ```
 
-Al habilitar carga:
+No implementa:
+
+- término proporcional;
+- término derivativo;
+- filtrado derivativo;
+- ganancia configurable desde el menú;
+- normalización explícita por tiempo de muestreo;
+- histéresis alrededor del cruce buck/boost;
+- feed-forward continuo de Vin/Vout.
+
+Sí existe una precarga inicial de la salida basada en Vin/Vout, saturación del integrador y promedio ADC rápido. Como la ganancia se aplica “por actualización”, la ganancia integral efectiva por segundo depende de cuántas veces por segundo se complete el burst ADC. Esa frecuencia de lazo todavía no fue medida en hardware.
+
+### 14.2 Pines y variables que intervienen
+
+| Elemento | Función durante carga |
+|---|---|
+| P00 | corte general de batería: bajo conecta, alto corta |
+| P20 | selección carga/descarga: alto bloquea descarga y selecciona carga |
+| P21 | selector de topología: bajo buck/reposo, alto boost |
+| P15 / TO11 | único PWM físico compartido por buck, boost y descarga |
+| `IoutSet_` | corriente lógica solicitada después de límites y rampa |
+| `i_PID_setpoint` | consigna raw entregada al integrador |
+| `PV` | lectura rápida raw del ADC `Ismps` |
+| `i_PID_MV` | acumulador integral con ocho bits fraccionales |
+| `MV` | acumulador expuesto sin fracción; selecciona topología y duty |
+| `i_PID_CutOffVoltage` | umbral raw rápido de Vout+ |
+
+P00 no lo maneja el PID. El core lo conecta al entrar en la pantalla previa mediante `AnalogInputs::powerOn()` y lo corta al terminar o ante el tratamiento completo de un error. El apagado inmediato del PID actúa primero sobre P15, P21 y P20.
+
+### 14.3 Secuencia exacta al comenzar una carga
+
+El orden normal es:
+
+1. `AnalogInputs::powerOn()` pone P00 bajo y conecta los bornes para medir; todavía no habilita potencia.
+2. La pantalla previa valida Vout y, en LiXX, el puerto de balance.
+3. `Monitor::powerOn()` calcula y guarda el cutoff rápido de Vout+.
+4. La estrategia llama `SMPS::powerOn()`.
+5. `SMPS::powerOn()` guarda consigna lógica y raw cero.
+6. `hardware::setChargerOutput(true)` fuerza primero un estado inactivo:
+   - P15 bajo;
+   - P21 bajo;
+   - P20 alto;
+   - PID deshabilitado durante la reconfiguración.
+7. `SMPS_PID::init(Vin,Vout_plus)` inicializa el acumulador y habilita el callback ADC.
+8. El primer `SMPS_PID::update()` válido aplica físicamente el MV inicial; `init()` por sí solo no enciende P15.
+
+La estrategia que fija la primera corriente depende del programa:
+
+- `Charge`, `Charge+balance`, `Fast charge` y la rama de carga de Storage usan Thévenin; inicialmente pueden conservar consigna cero hasta disponer de mediciones estables.
+- NiCd/NiMH y LED llaman inmediatamente `SMPS::trySetIout(minI)` y luego avanzan hacia `maxI`.
+- Discharge no usa este PID.
+
+### 14.4 Precarga inicial del integrador
+
+La comparación de arranque usa magnitudes calibradas `Vin` y **Vout+ físico**, no Vout diferencial ni la suma del balanceador:
 
 ```text
-si Vout_plus > Vin: MV inicial = 32760
-si no:              MV inicial = 0
+si Vout_plus > Vin:
+    MV_inicial = 32760       frontera buck/boost
+si Vout_plus <= Vin:
+    MV_inicial = 0
 ```
 
-### 14.3 Buck
+Luego se convierte a Q8:
 
-Para `0 <= MV <= 32760`:
+```text
+i_PID_MV = MV_inicial * 256
+```
+
+Interpretación:
+
+- si la salida está por debajo de Vin, el lazo comienza desde buck 0 % y sube;
+- si la salida ya está por encima de Vin, comienza en la frontera: buck 100 % / boost 0 %;
+- con error positivo desde esa frontera, el siguiente crecimiento entra en boost;
+- con error negativo, retrocede dentro de buck.
+
+No hay margen ni histéresis en la comparación `Vout_plus > Vin`. La salida precargada sólo llega a P15 durante la primera actualización ADC habilitada. Si antes se detecta el cutoff, permanece apagada.
+
+`[CÓDIGO][RIESGO]` Si se inicializa en 32760, el setpoint es cero y la realimentación también es cero, el error inicial vale cero y la primera actualización ordena buck 100 %. Es el comportamiento literal del código; todavía debe validarse en la etapa física bajo todas las condiciones de Vin/Vout.
+
+### 14.5 Del pedido en mA al setpoint raw
+
+El lazo exterior entrega una corriente `I_pedida`. `SMPS::trySetIout()` aplica este orden.
+
+#### 14.5.1 Límite por potencia y corriente global
+
+Con la opción dinámica deshabilitada en este target:
+
+```text
+I_por_potencia = maxPc / Vout
+I_admitida = min(I_pedida, I_por_potencia, settings.maxIc)
+```
+
+`Vout` es la tensión principal diferencial calibrada. Si vale cero se reemplaza internamente por una unidad mínima para evitar división por cero. Los valores predeterminados del target son 50 W y 5 A, pero el perfil y la estrategia pueden imponer un máximo menor.
+
+#### 14.5.2 Limitador de cambio de consigna
+
+Cada llamada puede cambiar `IoutSet_` como máximo:
+
+```text
+SMPS_MAX_CURRENT_CHANGE_dM = 0,7 * 200 mA = 140 mA
+```
+
+```text
+si I_admitida > IoutSet_anterior + 140 mA:
+    I_nueva = IoutSet_anterior + 140 mA
+si I_admitida < IoutSet_anterior - 140 mA:
+    I_nueva = IoutSet_anterior - 140 mA
+si no:
+    I_nueva = I_admitida
+```
+
+Es un límite **por llamada**, no mA/s. La velocidad real de rampa depende de la frecuencia con que la estrategia exterior recalcule corriente. También se aplica al pedir cero: desde una corriente alta, la consigna lógica baja en escalones de hasta 140 mA, salvo que se apague completamente la salida.
+
+Si el valor no cambió, la función retorna y no reinicia mediciones.
+
+#### 14.5.3 Conversión por calibración
+
+La corriente lógica se convierte con la tabla `IsmpsSet`:
+
+```text
+setpoint_raw = reverseCalibrateValue(IsmpsSet, I_nueva)
+```
+
+Para dos puntos `(x0,y0)` y `(x1,y1)`:
+
+```text
+setpoint_raw = x0 + (I_nueva-y0)*(x1-x0)/(y1-y0)
+```
+
+Se limita primero a 0…65535 por la función genérica y después a:
+
+```text
+SMPS_UPPERBOUND_VALUE = 60000
+```
+
+`hardware::setChargerValue()` sólo copia ese número a `i_PID_setpoint`; no escribe el PWM directamente. Cuando cambia el valor, `SMPS::setValue()` llama además a `AnalogInputs::resetMeasurement()`, reiniciando los contadores de estabilidad que también utiliza el balanceador.
+
+### 14.6 De dónde sale la realimentación rápida
+
+El ADC CMS recorre 17 posiciones; `Ismps` aparece cuatro veces para acelerar el lazo. Cada posición realiza:
+
+```text
+1 conversión descartada después del cambio de canal
+70 conversiones aceptadas y sumadas
+```
+
+Para la corriente:
+
+```text
+sample16 = raw12 << 4
+PV = redondear(suma de 70 sample16 / 70)
+```
+
+Al finalizar cada uno de los cuatro bursts de `Ismps`:
+
+1. se publica el nuevo `fast_adc_[Ismps]`;
+2. se selecciona y arranca el canal siguiente;
+3. se llama `SMPS_PID::update()` desde la interrupción ADC.
+
+Un recorrido completo requiere:
+
+```text
+17 posiciones * 71 conversiones = 1207 conversiones
+4 actualizaciones PID por recorrido
+```
+
+La separación estructural entre actualizaciones es de cuatro o cinco bursts según la posición en la lista. No se expresa aquí en microsegundos porque intervienen tiempo de conversión, entrada/salida de ISR y ejecución del propio PID; falta medirla con instrumental.
+
+Vout+ rápido sólo tiene una posición por recorrido. El cutoff se comprueba en las cuatro llamadas PID, pero reutiliza la última media de Vout+ hasta que se completa su burst siguiente.
+
+El resultado oversampleado público de 256 muestras **no alimenta el PID**. Se conserva para pantallas, calibración y mediciones lentas; así no añade esa latencia al control de potencia.
+
+La medición lenta que despierta al lazo exterior acumula:
+
+```text
+100 recorridos * 70 muestras = 7000 muestras equivalentes por canal
+```
+
+`Ismps` aparece cuatro veces por recorrido; antes de publicar la media lenta, su suma se divide por cuatro para conservar la misma escala equivalente de 7000 muestras. Cuando cambia el setpoint, `resetMeasurement()` invalida la ventana en curso, reinicia estabilidad y fuerza un ciclo de descarte antes de volver a construir la media larga.
+
+En consecuencia:
+
+- el integrador interior recibe cuatro oportunidades por recorrido;
+- Thévenin y las estrategias trabajan con la publicación lenta;
+- la rampa de 140 mA se aplica por llamada exterior, no por callback PID;
+- un cambio de consigna no frena el ADC rápido, pero sí retrasa la próxima medición declarada estable.
+
+### 14.7 Ecuación exacta del integrador
+
+En cada callback habilitado y después de pasar el cutoff:
+
+```text
+S = i_PID_setpoint                  consigna raw, uint16
+I = fast_adc[Ismps]                 feedback raw, uint16
+e = S - I                           error con signo
+q_nuevo = q_anterior + 4*e          acumulador Q8
+q_nuevo = limitar(q_nuevo, 0, 49140*256)
+MV = floor(q_nuevo / 256)
+```
+
+La constante compilada es:
+
+```text
+A = 4
+PID_MV_PRECISION = 8 bits
+```
+
+Por tanto, antes de truncar:
+
+```text
+ΔMV_por_actualización = error_raw * 4 / 256
+                       = error_raw / 64
+```
+
+Ejemplo con error positivo:
+
+```text
+S = 2000
+I = 1800
+e = +200
+incremento Q8 = 800
+incremento visible = 800/256 = 3,125 cuentas MV
+```
+
+Ejemplo con error negativo:
+
+```text
+S = 2000
+I = 2200
+e = -200
+MV disminuye aproximadamente 3,125 cuentas por actualización
+```
+
+La fracción no se pierde: queda acumulada en los ocho bits bajos. Sólo se trunca al enviar `MV` entero a la etapa PWM.
+
+Si `S=I`, MV permanece donde estaba. El controlador no conoce directamente mA ni voltios: compara dos códigos raw.
+
+### 14.8 Saturación, memoria y ausencia de anti-oscilación
+
+El acumulador queda limitado a:
+
+```text
+0 <= MV <= MAX_PID_MV
+MAX_PID_MV = 1,5 * 32760 = 49140
+```
+
+La saturación se aplica en cada actualización, por lo que no puede acumularse más allá de los extremos. Sin embargo:
+
+- no se detiene condicionalmente la integración cuando la salida está saturada;
+- no hay histéresis en 32760;
+- no hay banda muerta alrededor de error cero;
+- no hay limitador directo de variación de MV;
+- no se reinicia el integrador al cambiar setpoint;
+- no hay detección explícita de oscilación.
+
+Al modificar la consigna, MV conserva el valor anterior y sube o baja desde allí. `setChargerValue(0)` no apaga por sí solo P15: coloca consigna cero y el integrador debe descender con realimentación. `setChargerOutput(false)` sí deshabilita el PID y fuerza P15 bajo inmediatamente.
+
+### 14.9 Relación entre las dos calibraciones de corriente
+
+Hay dos tablas distintas:
+
+| Tabla | Qué representa |
+|---|---|
+| `IsmpsSet` | raw de mando guardado para producir una corriente conocida |
+| `Ismps` | raw ADC físico medido a esa misma corriente |
+
+La pantalla de corriente usa `Ismps` calibrado a mA. El PID rápido, en cambio, no calibra `PV` a mA: compara directamente:
+
+```text
+raw obtenido de reverseCalibrate(IsmpsSet, mA solicitados)
+contra
+raw rápido medido en Ismps
+```
+
+Por ello ambas escalas raw deben resultar compatibles en el rango de trabajo. Una calibración que produzca valores físicos correctos por separado, pero raws muy diferentes entre `IsmpsSet` e `Ismps`, cambia el punto al que converge el lazo.
+
+`[MEDIDO][RIESGO]` El backup relevado el 2026-08-19 contenía:
+
+```text
+IsmpsSet = (69,100 mA), (2082,3000 mA)
+Ismps    = ( 0,100 mA), (2078,3000 mA)
+```
+
+En 3 A los raw son próximos. En el punto de 100 mA, el PID recibiría una consigna raw cercana a 69 mientras el punto físico guardado de feedback es cero. Esta discrepancia explica por qué la regulación baja no debe considerarse validada aunque la pantalla convierta cada tabla por separado.
+
+### 14.10 Mapeo de MV a buck y boost
+
+La escala lógica de PWM se define como:
+
+```text
+OUTPUT_PWM_PRECISION_PERIOD = 780 * 42 = 32760
+```
+
+Ese 32760 es una escala matemática; no es el período físico del TM41.
+
+#### Zona buck
+
+Para:
+
+```text
+0 <= MV <= 32760
+```
+
+se ejecuta:
 
 ```text
 P21 = bajo
-duty_P15 = MV / 32760
+valor_PWM_P15 = MV
+duty_buck_ideal = MV / 32760
 ```
 
-- MV=0: P15 GPIO bajo, 0 %.
-- MV=32760: P15 GPIO alto, 100 %.
+#### Zona boost
 
-### 14.4 Cambio a boost
-
-Para `MV > 32760`:
-
-1. detiene P15 si cambia la topología;
-2. pone P21 alto;
-3. calcula `MV_boost = MV - 32760`;
-4. aplica `duty_boost = MV_boost / 32760` en P15.
-
-No hay demora intencional entre detener PWM, cambiar P21 y reanudar.
-
-Máximo:
+Para:
 
 ```text
-MV = 49140
-MV_boost = 16380
-duty_boost = 16380 / 32760 = 50 %
+32760 < MV <= 49140
 ```
 
-Modelo ideal usado por el comentario:
+se ejecuta:
+
+```text
+P21 = alto
+valor_boost = MV - 32760
+duty_boost_ideal = valor_boost / 32760
+```
+
+Tabla de puntos principales:
+
+| MV | P21 | Valor enviado a P15 | Interpretación |
+|---:|---|---:|---|
+| 0 | bajo | 0 | buck 0 % |
+| 8190 | bajo | 8190 | buck 25 % |
+| 16380 | bajo | 16380 | buck 50 % |
+| 24570 | bajo | 24570 | buck 75 % |
+| 32760 | bajo | 32760 | buck 100 %, frontera |
+| 32761 | alto | 1 | boost prácticamente 0 % |
+| 40950 | alto | 8190 | boost 25 % |
+| 49140 | alto | 16380 | boost 50 %, máximo |
+
+El modelo ideal usado para limitar boost es:
 
 ```text
 Dmax = 0,5
-Vout <= Vin / (1-Dmax) = 2*Vin
+Vout_ideal <= Vin / (1-Dmax) = 2*Vin
 ```
 
-No incluye pérdidas ni margen de regulación.
+No incluye caída de MOSFETs/diodos, resistencia de bobina, carga, ripple, pérdidas, margen de control ni temperatura. No demuestra que una 6S pueda cargarse completamente desde 12 V.
 
-### 14.5 PWM físico
+### 14.11 Transición física buck ↔ boost
 
-`[MANUAL][COMPILA]` TM41 usa canal maestro y esclavo, TO11 en P15, 48 MHz y período 1600 ticks:
+La misma salida P15 se reutiliza en las dos topologías. Al detectar un cambio de zona:
+
+1. `stopPowerPWM()` detiene TM41 y fuerza P15 bajo;
+2. se escribe P21 con la nueva topología;
+3. se guarda el nuevo estado lógico;
+4. se aplica en P15 el duty correspondiente a la nueva zona.
+
+Cruce ascendente exacto:
 
 ```text
-frecuencia = 48 MHz / 1600 = 30 kHz
-resolución = 1/1600 = 0,0625 %
-high_ticks = value * 1600 / 32760
+MV=32760: P21 bajo, P15 alto fijo, buck 100 %
+MV=32761: detener P15 -> P21 alto -> P15 bajo, boost ~0 %
 ```
 
-0 % y 100 % se hacen como GPIO. En valores intermedios se reescribe `TDR11` sin reiniciar el temporizador.
-
-### 14.6 Cutoff rápido
-
-Al iniciar:
+Cruce descendente exacto:
 
 ```text
-Vcut = min(Vc_total + 3 V, 27 V)
+MV=32761: P21 alto, P15 bajo, boost ~0 %
+MV=32760: detener P15 -> P21 bajo -> P15 alto, buck 100 %
 ```
 
-Si `Vout_plus_fast_raw >= cutoff_raw`:
+La discontinuidad de duty de P15 es intencional porque su significado cambia con P21. Se garantiza por software que P21 sólo se modifica con P15 inactivo. No existe una espera deliberada ni un tiempo muerto programado entre esas operaciones; sólo transcurre el tiempo de ejecución de instrucciones.
+
+Como no hay histéresis, si MV oscila entre 32760 y 32761 el firmware puede repetir el cambio de topología en actualizaciones consecutivas. Este comportamiento necesita validación con osciloscopio.
+
+### 14.12 PWM físico TM41/TO11
+
+`[MANUAL][COMPILA]` El PWM usa:
 
 ```text
-PWM = 0
-P21 = buck/reposo
-PID = deshabilitado
-registrar error externo
+reloj MCU                = 48 MHz
+TM41 canal 0             = maestro de período
+TM41 canal 1             = esclavo de duty
+salida                    = TO11 -> P15
+TDR10                     = 1599
+período efectivo          = TDR10 + 1 = 1600 ticks
+frecuencia                = 48 MHz / 1600 = 30 kHz
+resolución física         = 1/1600 = 0,0625 %
 ```
 
-El monitor pasa luego a `ERROR` y el apagado final corta P00.
+La conversión es:
 
-El cutoff rápido y el límite ADC del monitor usan **Vout+ físico**, no `Vout_plus - Vout_minus`. Esto es intencional en el código y puede resultar más conservador cuando Vout− no está cerca de cero.
+```text
+high_ticks = floor(valor_PWM * 1600 / 32760)
+```
 
-`[MEDIDO]` La prueba vigente mostró corte de 27 V como `C59786` y `X0` en reposo. Confirma el cálculo a escala completa, no el boost 6S.
+Puntos:
 
-### 14.7 Apagado y descarga
+| Valor lógico | high_ticks | Salida física |
+|---:|---:|---|
+| 0 | 0 | TM41 detenido; P15 GPIO bajo |
+| 8190 | 400 | PWM 25 % |
+| 16380 | 800 | PWM 50 % |
+| 24570 | 1200 | PWM 75 % |
+| 32760 | 1600 | TM41 detenido; P15 GPIO alto |
 
-Al apagar carga: setpoint cero, P15 bajo, P21 bajo, PID deshabilitado, P20 alto y finalmente P00 alto.
+La primera cuenta física distinta de cero requiere aproximadamente:
 
-Al encender descarga: P15=0, P21 bajo y P20 bajo. El PWM proviene directamente de `IdischargeSet`. Al apagar pone P15=0, espera 10 ms, P20 alto y espera otros 10 ms.
+```text
+ceil(32760/1600) = 21 cuentas lógicas
+```
+
+Por eso un `valor_PWM` de 1…20 todavía se convierte en cero ticks. El acumulador PID conserva más resolución, pero la compuerta cambia sólo al cruzar un tick físico.
+
+En valores intermedios:
+
+- si TM41 ya está funcionando, sólo se reescribe `TDR11`;
+- el nuevo duty se usa en el siguiente trigger del maestro;
+- no se reinicia ni retriggera el contador;
+- al venir de 0 % o 100 %, se configura y arranca maestro+esclavo juntos.
+
+Los extremos usan GPIO para impedir pulsos espurios propios de representar 0 % o 100 % con el modo PWM.
+
+### 14.13 Cutoff rápido de Vout+
+
+Antes de iniciar la estrategia, el monitor calcula:
+
+```text
+Vcut_físico = min(Vc_total + 3 V, MAX_CHARGE_V)
+MAX_CHARGE_V = 27 V
+cutoff_raw = reverseCalibrateValue(Vout_plus_pin, Vcut_físico)
+cutoff_raw = min(cutoff_raw, 65520)
+```
+
+En cada actualización PID habilitada, **antes** de leer corriente o integrar:
+
+```text
+si Vout_plus_fast_raw >= cutoff_raw:
+    P15 = bajo
+    P21 = bajo
+    P20 = alto
+    PID = deshabilitado
+    cutoffTripped = true
+    Monitor::i_externalError = BATTERY_DISCONNECTED
+    retornar sin actualizar MV
+```
+
+P00 no se corta dentro de la ISR. En la siguiente ejecución del monitor, el error externo termina la estrategia; el tratamiento de error apaga mediciones y pone P00 alto.
+
+El PID no se reactiva automáticamente cuando Vout cae: requiere una nueva secuencia de `SMPS::powerOn()`/`init()`.
+
+El cutoff rápido y el límite ADC del monitor usan **Vout+ físico**, no `Vout_plus - Vout_minus`. Puede ser más conservador cuando Vout− no está cerca de cero.
+
+`[MEDIDO]` La prueba vigente mostró corte de 27 V como `C59786` y `X0` en reposo. Confirma el cálculo a escala completa y que todavía no se había disparado; no valida boost ni carga 6S.
+
+### 14.14 Interacción con Thévenin y balanceo
+
+El integrador rápido no conoce estados CC, CV, bleed ni química. Sólo ve `S`, `PV` y cutoff. Las decisiones superiores producen estos efectos:
+
+- Thévenin calcula una nueva corriente sólo con mediciones suficientemente estables o al alcanzar la tensión final bajo condiciones específicas.
+- Si `Balancer::isWorking()` es verdadero, `TheveninMethod::calculateNewI()` no actualiza el modelo ni la consigna; el PID mantiene la última consigna recibida.
+- Las resistencias de bleed pueden cambiar tensiones de celda, pero no deshabilitan directamente P15 ni el integrador.
+- Cada cambio real de consigna llama `resetMeasurement()` y reinicia estabilidad de Vout, corriente y celdas; por eso cambios reiterados pueden retrasar el comienzo de una ronda de balanceo.
+- Al pedir una observación a corriente cero, `trySetIout(0)` respeta el descenso máximo de 140 mA por llamada. No equivale necesariamente a un corte instantáneo.
+- Al completar o abortar, `SMPS::powerOff()` sí fuerza inmediatamente el estado inactivo.
+
+En `Charge+balance`, la letra principal puede seguir mostrando `C` porque `SMPS::isPowerOn()` permanece verdadero, incluso durante un intervalo con consigna raw cero o mientras actúan resistencias de balance.
+
+### 14.15 Apagado normal y apagado por error
+
+`SMPS::powerOff()` ejecuta:
+
+1. setpoint lógico/raw cero;
+2. P15 bajo;
+3. P21 bajo;
+4. PID deshabilitado;
+5. P20 alto;
+6. marca lógica `SMPS::on_=false`.
+
+Al finalizar todo el programa, `AnalogInputs::powerOff()` pone P00 alto y vuelve a asegurar carga y descarga apagadas. El balanceador se apaga por su propia estrategia.
+
+Ante cutoff rápido, los pasos P15/P21/P20 ocurren en la ISR; P00 se corta después, cuando el monitor procesa el error. Ante STOP o final normal, el apagado se realiza desde el flujo de estrategia.
+
+### 14.16 Por qué descarga no usa este PID
+
+Al habilitar descarga:
+
+```text
+P15 = bajo
+P21 = bajo
+P20 = bajo
+PID de carga = deshabilitado
+```
+
+`IdischargeSet` se convierte a un raw calibrado y se envía directamente a `outputPWM::setPWM()`. No se compara `Idischarge` rápido contra una consigna dentro de `SMPS_PID`. El core mide corriente de descarga para pantalla, Thévenin y protecciones, pero este port no tiene un lazo integral rápido de descarga.
+
+Al apagar descarga:
+
+```text
+P15 = bajo
+esperar 10 ms
+P20 = alto
+esperar 10 ms
+```
+
+### 14.17 Pantalla de diagnóstico `PID debug`
+
+`Options -> buck test -> PID debug` expone cuatro páginas:
+
+| Página | Campo | Significado |
+|---:|---|---|
+| 0 | `U` | llamadas totales a `update()`, incluso deshabilitado |
+| 0 | `A` | actualizaciones que encontraron el PID habilitado |
+| 1 | `E0/E1` | PID deshabilitado/habilitado |
+| 1 | `X0/X1` | cutoff no disparado/disparado |
+| 1 | `S` | setpoint raw |
+| 2 | `M` | MV entero después de quitar los ocho bits fraccionales |
+| 2 | `I` | feedback rápido raw de `Ismps` |
+| 3 | `V` | último Vout+ rápido raw leído por el PID |
+| 3 | `C` | cutoff raw configurado |
+
+Los contadores son `uint16_t` y vuelven a cero al desbordar. `init()` también los reinicia.
+
+La prueba de diagnóstico está diseñada para no entregar potencia:
+
+- P00 permanece cortado;
+- START sólo llama `init(0,0)` con consigna cero;
+- INC/DEC cambian páginas y no aumentan duty;
+- al salir se fuerza P15 bajo, P21 bajo, P20 alto y P00 alto.
+
+`[MEDIDO]` En la primera prueba segura, `U` y `A` avanzaron juntos con `E1`, `X0`, `S0`, `M0`, `I0` y `V0`. Esto confirmó que la interrupción ADC llamaba al controlador y que un arranque 0/0 conservaba MV cero. En esa sesión `C20` reveló precisamente que el cutoff guardado era inválido; después de reparar la calibración/límite se observó `C59786` y `X0`.
+
+### 14.18 Ejemplo completo de una corrección
+
+Supóngase una carga ya activa en buck:
+
+```text
+I_pedida por Thévenin       = 2000 mA
+IoutSet anterior            = 1860 mA
+límite por llamada          = +140 mA
+IoutSet nueva               = 2000 mA
+reverseCalibrate IsmpsSet   = S=1400 raw       ejemplo
+feedback burst Ismps        = I=1200 raw       ejemplo
+q anterior                  = 16000*256
+```
+
+La ISR calcula:
+
+```text
+error                       = 1400-1200 = +200
+incremento                  = 4*200 = 800 unidades Q8
+MV nuevo                    = (16000*256 + 800)/256
+                            = 16003,125
+zona                        = buck
+valor P15                   = 16003
+high_ticks                  = floor(16003*1600/32760)
+                            = 781 ticks aproximadamente
+duty físico                 = 781/1600 = 48,81 %
+```
+
+En el burst siguiente, si la corriente raw continúa bajo `S`, MV vuelve a subir. Si supera `S`, comienza a bajar. Si MV llega a 32761, el firmware detiene P15, pone P21 alto y recomienza desde boost casi 0 %.
+
+Los números raw del ejemplo son ilustrativos; deben obtenerse de la calibración real del equipo.
+
+### 14.19 Qué está comprobado y qué sigue pendiente
+
+- `[CÓDIGO][COMPILA]` Ruta consigna → integrador → buck/boost → TM41 implementada.
+- `[MANUAL][COMPILA]` Relación `TDR10+1`, asignación TO11/P15 y actualización de TDR11 respaldadas por el manual del MCU.
+- `[MEDIDO]` El ADC llama al PID; los contadores de diagnóstico avanzan.
+- `[MEDIDO]` Cutoff calibrado de 27 V produce raw 59786 y no queda recortado a media escala.
+- `[MEDIDO]` P15 permaneció bajo en pruebas anteriores cuando el cutoff inválido deshabilitaba el PID antes de generar mando.
+- `[PENDIENTE]` Medir frecuencia real de actualización del lazo integral.
+- `[PENDIENTE]` Validar ganancia `A=4`, estabilidad, sobreimpulso y respuesta a escalones.
+- `[PENDIENTE]` Observar P15/P21 al cruzar buck↔boost en ambos sentidos y descartar glitches.
+- `[PENDIENTE]` Validar 0 %, primer tick, 100 %, temperatura y corriente real.
+- `[PENDIENTE]` Corregir/verificar la compatibilidad raw `IsmpsSet`/`Ismps` en corriente baja.
+- `[PENDIENTE]` Validar carga real 6S; la fórmula ideal de boost no concede margen para 25,2 V desde 12 V.
 
 ---
 
