@@ -314,6 +314,37 @@ Riesgos o anomalías:
 Próximo paso mínimo:
 ```
 
+### 2026-08-20 - Manual completo de funcionamiento del core y del port CMS
+
+- Objetivo: documentar como manual técnico y de usuario el flujo completo del
+  core, las químicas, programas, cálculos, balanceo, protecciones y la
+  conversión CMS32L051 de consigna a PID/PWM buck-boost.
+- Archivo agregado:
+  `docs/imaxB6-80W-Cmsemicon-CMS32L051/MANUAL_FUNCIONAMIENTO_CORE.md`.
+- `[CÓDIGO]` El documento se contrastó con `Program`, `ProgramData`, todas las
+  estrategias, `AnalogInputs`, menús/pantallas y los drivers CMS de ADC, PID y
+  PWM en el commit `998d2569`.
+- Se documentaron fórmulas de calibración, límite por potencia, integración de
+  capacidad/energía, modelo de Thévenin, delta-V/dT/dt, selección de bleed y
+  mapeo exacto de `MV` a buck 0..100 % y boost 0..50 %.
+- `[CÓDIGO]` La guía de pantalla incluye el recorrido exacto de las 11 páginas
+  de `Charge+balance` 6S y el equivalente para todos los demás programas,
+  químicas y estados de conexión; define `C/D/B/W/N`, `m/b/B`, iconos de
+  bleed, unidades y las cuentas de `batt. R`, resistencia por celda y
+  `wires R` en mΩ.
+- `[CÓDIGO][RIESGO]` La revisión registró casos que no deben confundirse con
+  funciones validadas: `D/C cycles=0` desborda a 255; la histéresis térmica de
+  descarga usa una variable local no inicializada; NiZn no exige balanceador
+  en la pantalla previa; `Fast charge` puede fijar `Ic/5` por debajo del mínimo
+  global; Pb/Unknown pueden heredar `DCcycles`; UART y `buttons: rev` no tienen
+  implementación funcional completa en este port.
+- No se modificó lógica del firmware ni se energizó/flasheó hardware.
+- Verificación: estructura Markdown y bloques de código comprobados;
+  `git diff --check` sin errores.
+- Próximo paso mínimo: revisión del manual por el usuario y, por separado,
+  decidir cuáles anomalías de código deben corregirse antes de continuar las
+  pruebas de potencia.
+
 ### 2026-08-19 - Corrección de carrera en la interrupción ADC
 
 - `[MEDIDO]` En calibración de corriente de carga con una celda de 3,7 V,
