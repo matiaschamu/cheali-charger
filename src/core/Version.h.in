@@ -25,7 +25,9 @@
 #define CHEALI_CHARGER_VERSION                          @cheali-charger-version@
 #define CHEALI_CHARGER_FULL_VERSION                     @cheali-charger-version@_@cheali-charger-buildnumber@
 
+#ifndef CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION
 #define CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION       @cheali-charger-eeprom-calibration-version@
+#endif
 #define CHEALI_CHARGER_EEPROM_PROGRAMDATA_VERSION       @cheali-charger-eeprom-programdata-version@
 #define CHEALI_CHARGER_EEPROM_SETTINGS_VERSION          @cheali-charger-eeprom-settings-version@
 

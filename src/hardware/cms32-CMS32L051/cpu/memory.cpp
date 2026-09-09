@@ -33,6 +33,7 @@ namespace {
 constexpr uint32_t EEPROM_ADDR    = 0xFC00;
 constexpr uint32_t EEPROM_SIZE    = 0x0400;     /* 1 KB shadow region   */
 constexpr uint32_t FLASH_SECTOR   = 0x0100;     /* CMS32L051 sector = 256 B */
+bool eeprom_write_batch_active    = false;
 
 inline void fmc_wait_ovf() {
     while ((FMC->FLSTS & FMC_FLSTS_OVF_Msk) == 0) { /* spin */ }
@@ -92,6 +93,18 @@ void write_impl(uint8_t * addressE, const uint8_t * src, int size) {
     /* 1. Update the RAM copy at the requested address. */
     std::memcpy(addressE, src, size);
     /* 2. Mirror the full eeprom::data struct back into flash. */
+    if (!eeprom_write_batch_active)
+        sync_to_flash();
+}
+
+void beginWriteBatch() {
+    eeprom_write_batch_active = true;
+}
+
+void endWriteBatch() {
+    if (!eeprom_write_batch_active)
+        return;
+    eeprom_write_batch_active = false;
     sync_to_flash();
 }
 

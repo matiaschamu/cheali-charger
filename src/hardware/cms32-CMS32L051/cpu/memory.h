@@ -56,6 +56,8 @@ namespace pgm {
 namespace eeprom {
 
     void write_impl(uint8_t * addressE, const uint8_t * data, int size);
+    void beginWriteBatch();
+    void endWriteBatch();
 
     /*
      * Cortex-M0+ does not support unaligned halfword/word loads. The core

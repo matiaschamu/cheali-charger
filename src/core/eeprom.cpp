@@ -32,6 +32,49 @@
 namespace eeprom {
     Data data EEMEM;
 
+#ifdef ENABLE_CUMULATIVE_BALANCE_PORT
+    /* Convert the previous mixed balance calibration layout exactly once:
+     * Vb1/Vb2 were already cumulative, while Vb3..VbN stored one cell each.
+     * The final flash image contains the new version and its matching CRC;
+     * boot validation rejects an interrupted or partial synchronization. */
+    static void migrateCumulativeBalancePortCalibration() {
+        uint16_t version = eeprom::read(&data.calibrationVersion);
+        if(version != CUMULATIVE_BALANCE_PORT_LEGACY_CALIBRATION_VERSION)
+            return;
+        if(restoreCalibrationCRC(false))
+            return;
+
+        AnalogInputs::CalibrationPoint legacy[MAX_BALANCE_CELLS][ANALOG_INPUTS_MAX_CALIBRATION_POINTS];
+        for(uint8_t cell=0; cell < MAX_BALANCE_CELLS; cell++) {
+            AnalogInputs::Name pin = AnalogInputs::Name(AnalogInputs::Vb1_pin+cell);
+            for(uint8_t point=0; point < ANALOG_INPUTS_MAX_CALIBRATION_POINTS; point++) {
+                eeprom::read<AnalogInputs::CalibrationPoint>(legacy[cell][point],
+                        &data.calibration[pin].p[point]);
+            }
+        }
+
+        /* CMS EEPROM emulation otherwise reprograms the complete 1 KiB shadow
+         * after every small write. Build the converted image in RAM and sync
+         * it once; version and CRC will reject an interrupted flash image. */
+        eeprom::beginWriteBatch();
+        for(uint8_t point=0; point < ANALOG_INPUTS_MAX_CALIBRATION_POINTS; point++) {
+            uint32_t cumulative = legacy[1][point].y;
+            for(uint8_t cell=2; cell < MAX_BALANCE_CELLS; cell++) {
+                cumulative += legacy[cell][point].y;
+                AnalogInputs::CalibrationPoint migrated = legacy[cell][point];
+                migrated.y = cumulative > UINT16_MAX ? UINT16_MAX : cumulative;
+                AnalogInputs::Name pin = AnalogInputs::Name(AnalogInputs::Vb1_pin+cell);
+                eeprom::write<AnalogInputs::CalibrationPoint>(
+                        &data.calibration[pin].p[point], migrated);
+            }
+        }
+        restoreCalibrationCRC();
+        eeprom::write(&data.calibrationVersion,
+                uint16_t(CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION));
+        eeprom::endWriteBatch();
+    }
+#endif
+
     bool testOrRestore(uint16_t * adr, uint16_t version, bool restore) {
         uint8_t trials = EEPROM_READ_TRIALS;
         if(restore) {
@@ -52,6 +95,11 @@ namespace eeprom {
         if(testOrRestore((uint16_t*) &data.magicString[2], CHARS_TO_UINT16('l','i'), restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
         if(testOrRestore((uint16_t*) &data.architecture, CHEALI_CHARGER_ARCHITECTURE, restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
         if(testOrRestore((uint16_t*) &data.architectureInfo, CHEALI_CHARGER_ARCHITECTURE_INFO, restore & EEPROM_RESTORE_MAGIC_NUMBER)) test |= EEPROM_RESTORE_MAGIC_NUMBER;
+
+#ifdef ENABLE_CUMULATIVE_BALANCE_PORT
+        if(restore == 0 && !(test & EEPROM_RESTORE_MAGIC_NUMBER))
+            migrateCumulativeBalancePortCalibration();
+#endif
 
         if(testOrRestore(&data.calibrationVersion, CHEALI_CHARGER_EEPROM_CALIBRATION_VERSION, restore & EEPROM_RESTORE_CALIBRATION))    test |= EEPROM_RESTORE_CALIBRATION;
         if(testOrRestore(&data.programDataVersion, CHEALI_CHARGER_EEPROM_PROGRAMDATA_VERSION, restore & EEPROM_RESTORE_PROGRAM_DATA))   test |= EEPROM_RESTORE_PROGRAM_DATA;
