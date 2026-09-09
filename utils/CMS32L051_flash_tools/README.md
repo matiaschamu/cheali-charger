@@ -70,4 +70,7 @@ openocd.exe -f tcl/target_CMS32L051_win.cfg \
             -c "shutdown"
 ```
 
-Programming is byte-by-byte over SWD so a full 32 KB image takes ~2–3 minutes.
+The legacy procedures program byte-by-byte. `cms32_flash_safe_word` uses the
+documented 32-bit word-program mode while retaining the same EEPROM backup and
+verification steps. On the tested ST-Link V2 setup at 4 MHz, a 34,664-byte
+image completed in about 56 seconds instead of about 210 seconds.

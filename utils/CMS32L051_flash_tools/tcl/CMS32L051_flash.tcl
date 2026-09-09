@@ -106,6 +106,16 @@ proc cms32_write_byte_fast {addr val} {
     fmc_wait_ovf
 }
 
+# [MANUAL] CMS32L051 User Manual V1.2.3, section 27.4.3, specifies word
+# programming.  Keep one OVF-complete program cycle per aligned 32-bit word.
+proc cms32_write_word_fast {addr val} {
+    global FMC_FLOPMD1 FMC_FLOPMD2
+    mww $FMC_FLOPMD1 0xAA
+    mww $FMC_FLOPMD2 0x55
+    mww $addr $val
+    fmc_wait_ovf
+}
+
 proc cms32_program_bin_at {filename base_addr max_len} {
     global FMC_FLPROT
     if {![file exists $filename]} {
@@ -145,6 +155,60 @@ proc cms32_program_bin_at {filename base_addr max_len} {
 proc cms32_program_bin {filename} {
     global CMS32_EEPROM_ADDR
     cms32_program_bin_at $filename 0x00000000 $CMS32_EEPROM_ADDR
+}
+
+# Experimental word-program variant.  Partial final words are padded with
+# 0xFF, which leaves the remaining bytes in their erased state.
+proc cms32_program_bin_at_word {filename base_addr max_len} {
+    global FMC_FLPROT
+    if {![file exists $filename]} {
+        error "File not found: $filename"
+    }
+    if {($base_addr & 3) != 0} {
+        error [format "Word-program base is not 4-byte aligned: 0x%08X" $base_addr]
+    }
+    set fp [open $filename rb]
+    set data [read $fp]
+    close $fp
+    set len [string length $data]
+    if {$len > $max_len} {
+        error [format "Image is too large: %d bytes (limit %d)" $len $max_len]
+    }
+    set word_count [expr {($len + 3) / 4}]
+    echo [format "Word-programming %d bytes (%d words) at 0x%08X..." $len $word_count $base_addr]
+    set skipped 0
+    set pct_prev -1
+    mww $FMC_FLPROT 0xF1
+    for {set i 0} {$i < $word_count} {incr i} {
+        set word 0
+        for {set j 0} {$j < 4} {incr j} {
+            set index [expr {$i * 4 + $j}]
+            if {$index < $len} {
+                set byte [scan [string index $data $index] %c]
+            } else {
+                set byte 0xFF
+            }
+            set word [expr {$word | (($byte & 0xFF) << (8 * $j))}]
+        }
+        if {$word == 0xFFFFFFFF} {
+            incr skipped
+        } else {
+            set addr [expr {$base_addr + $i * 4}]
+            cms32_write_word_fast $addr [format "0x%08X" $word]
+        }
+        set pct [expr {$i * 100 / $word_count}]
+        if {$pct != $pct_prev} {
+            echo "$pct%"
+            set pct_prev $pct
+        }
+    }
+    mww $FMC_FLPROT 0xF0
+    echo "Word programming done ($skipped of $word_count words were 0xFFFFFFFF, skipped)"
+}
+
+proc cms32_program_bin_word {filename} {
+    global CMS32_EEPROM_ADDR
+    cms32_program_bin_at_word $filename 0x00000000 $CMS32_EEPROM_ADDR
 }
 
 proc cms32_check_eeprom_file {filename} {
@@ -205,6 +269,20 @@ proc cms32_flash_safe {binfile eepromfile} {
     cms32_firmware_erase
     cms32_program_bin $binfile
     echo "Verifying firmware..."
+    verify_image $binfile 0x0 bin
+    echo "Verifying preserved EEPROM..."
+    cms32_eeprom_verify $eepromfile
+    echo "Done - resetting"
+    reset run
+}
+
+# Experimental safe workflow using the documented 32-bit word-program mode.
+proc cms32_flash_safe_word {binfile eepromfile} {
+    halt
+    cms32_eeprom_backup $eepromfile
+    cms32_firmware_erase
+    cms32_program_bin_word $binfile
+    echo "Verifying word-programmed firmware..."
     verify_image $binfile 0x0 bin
     echo "Verifying preserved EEPROM..."
     cms32_eeprom_verify $eepromfile
