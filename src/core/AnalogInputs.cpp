@@ -550,7 +550,17 @@ void AnalogInputs::finalizeFullVirtualMeasurement()
         out = out_p - out_m;
     setReal(Vout, out);
 
-#ifdef ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+#ifdef ENABLE_CUMULATIVE_BALANCE_PORT
+    AnalogInputs::ValueType previousTap = getRealValue(Vb0_pin);
+    for(uint8_t i=0; i < MAX_BALANCE_CELLS; i++) {
+        AnalogInputs::ValueType tap = getRealValue(Name(Vb1_pin+i));
+        AnalogInputs::ValueType cell = 0;
+        if(tap > previousTap)
+            cell = tap - previousTap;
+        setReal(Name(Vb1+i), cell);
+        previousTap = tap;
+    }
+#elif defined(ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT)
     AnalogInputs::ValueType vb0_p = getRealValue(Vb0_pin);
     AnalogInputs::ValueType vb1_p = getRealValue(Vb1_pin);
     AnalogInputs::ValueType vb2_p = getRealValue(Vb2_pin);

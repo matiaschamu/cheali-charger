@@ -16,7 +16,7 @@
  *   Pxy  → regular port x, pin y   (ports 0-7)
  *   Qxy  → extended port 1x, pin y (ports 12-14)
  *            Q20 = P120  Q24 = P124
- *            Q30 = P130
+ *            Q30 = P130  Q36 = P136
  *            Q40 = P140  Q46 = P146  Q47 = P147
  *
  * LCD (HD44780 4-bit mode — only D4-D7 connected):
@@ -62,12 +62,19 @@
 
 /* -----------------------------------------------------------------------
  * Analog inputs — all verified against the imaxB6-80W schematic.
+ *
+ * [CONTINUIDAD] The user confirmed on hardware on 2026-08-22 that P74/Vout-
+ * and P75/Vout+ both use a 100k series / 20k to GND divider. P73 remains the
+ * discharge-current ADC input; it was included in the first report by mistake.
+ * [CONTINUIDAD] P73/Idis and Q36=P136/Ismps each connect directly to the
+ * current shunt through their own 10k series resistor. This confirms the ADC
+ * roles but not current scale, polarity, or which shunt terminal each senses.
  * ----------------------------------------------------------------------- */
 #define OUTPUT_VOLTAGE_MINUS_PIN        CMS32_PIN(7,  4)  /* P74  – Vout−   ANI33 */
 #define OUTPUT_VOLTAGE_PLUS_PIN         CMS32_PIN(7,  5)  /* P75  – Vout+   ANI34 */
-#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73  – Idis    ANI32 */
+#define DISCHARGE_CURRENT_PIN           CMS32_PIN(7,  3)  /* P73  – Idis, shunt via 10k – ANI32 */
 #define V_IN_PIN                        CMS32_PIN(6,  2)  /* P62  – Vin     ANI27 */
-#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* P136 – Ismps   ANI36 */
+#define SMPS_CURRENT_PIN                CMS32_PIN(13, 6)  /* Q36=P136 – Ismps, shunt via 10k – ANI36 */
 #define T_EXTERNAL_PIN                  CMS32_PIN(6,  3)  /* P63  – NTC ext ANI28 */
 
 /* -----------------------------------------------------------------------
@@ -88,9 +95,22 @@
 #define BALANCER6_LOAD_PIN              CMS32_PIN(12, 1)  /* P121 = Q21 – cell 6 */
 
 /* -----------------------------------------------------------------------
- * Balancer cell voltage ADC inputs (direct, no multiplexer) — verified.
- * Vb0 = VBATT− reference, Vb6 = VBATT+ (absolute voltages; firmware
- * computes per-cell voltage as Vb_N − Vb_(N-1)).
+ * Balancer voltage ADC inputs (one channel per tap, no multiplexer).
+ *
+ * Each tap is cumulative from VBATT- and is attenuated to the ADC:
+ *   P31/Vb0: 10k series, no divider (VBATT- reference)
+ *   P14/Vb1: 47k from the Vb1 tap to P14, 1Mohm from P14 to GND [CONTINUIDAD]
+ *   P17/Vb2: 47k series / 47k to GND
+ *   P30/Vb3: 91k series / 47k to GND
+ *   P70/Vb4: 147k series / 47k to GND
+ *   P71/Vb5: 191k series / 47k to GND
+ *   P72/Vb6: 240k series / 47k to GND
+ *
+ * The P14 network was confirmed on hardware by the user on 2026-08-22; it
+ * disagrees with the 1k label in the available schematic. Firmware does not
+ * assume ideal divider ratios: calibration converts every ADC input back to
+ * its cumulative tap voltage, then the core calculates cell N as tap N minus
+ * tap N-1.
  * ----------------------------------------------------------------------- */
 #define BALANSER0_PIN                   CMS32_PIN(3, 1)   /* P31  – Vb0 (VBATT−) ANI22 */
 #define BALANSER1_PIN                   CMS32_PIN(1, 4)   /* P14  – Vb1           ANI17 */

@@ -33,13 +33,16 @@ const AnalogInputs::DefaultValues AnalogInputs::inputsP_[] PROGMEM = {
     {{0,  0},         {23492,  14052}},   //Vin
     {{4701,  3660},         {0,  0}},   //Textern
 
-    {{0,  0},         {25219,  3946}},   //Vb0_pin
-    {{0,  0},         {25219,  3946}},   //Vb1_pin
-    {{0,  0},         {50664,  7892}},   //Vb2_pin
-    {{0,  0},         {26372,  4082}},   //Vb3_pin
-    {{0,  0},         {25184,  3912}},   //Vb4_pin
-    {{0,  0},         {25169,  3916}},   //Vb5_pin
-    {{0,  0},         {25405,  3933}},   //Vb6_pin
+    /* [ESQUEMA][PENDIENTE] Vb1_pin..Vb6_pin are cumulative balance-tap
+     * voltages. These defaults preserve the inherited per-cell values by
+     * accumulating them; every charger still requires measured calibration. */
+    {{0,  0},         {25219,  3946}},   //Vb0_pin scale (VBATT- is normally 0V)
+    {{0,  0},         {25219,  3946}},   //Vb1_pin = C1
+    {{0,  0},         {50664,  7892}},   //Vb2_pin = C1+C2
+    {{0,  0},         {26372, 11974}},   //Vb3_pin = C1+C2+C3
+    {{0,  0},         {25184, 15886}},   //Vb4_pin = C1+...+C4
+    {{0,  0},         {25169, 19802}},   //Vb5_pin = C1+...+C5
+    {{0,  0},         {25405, 23735}},   //Vb6_pin = C1+...+C6
 
 
     {{415,  100},         {5066,  1000}},   //IsmpsSet

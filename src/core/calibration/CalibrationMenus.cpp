@@ -50,6 +50,35 @@ static void copyVbalVout()
     AnalogInputs::setCalibrationPoint(AnalogInputs::Vout_minus_pin, calibrationPoint, p);
 }
 
+#ifdef ENABLE_CUMULATIVE_BALANCE_PORT
+static void calibrateCumulativeBalancePort(AnalogInputs::Name nameEdited,
+        AnalogInputs::ValueType newValue)
+{
+    uint8_t editedCell = nameEdited - AnalogInputs::Vb1;
+    uint32_t cumulative = AnalogInputs::getRealValue(AnalogInputs::Vb0_pin);
+
+    /* A normal voltage calibration edits one individual cell. The physical
+     * ADC channels, however, measure cumulative connector taps. Update the
+     * edited tap and every connected tap above it so their calibration y
+     * values remain cumulative even after an earlier cell is corrected. */
+    for(uint8_t i=0; i < MAX_BALANCE_CELLS; i++) {
+        AnalogInputs::Name cell = AnalogInputs::Name(AnalogInputs::Vb1+i);
+        AnalogInputs::ValueType cellValue = AnalogInputs::getRealValue(cell);
+        if(i == editedCell)
+            cellValue = newValue;
+        cumulative += cellValue;
+
+        if(i >= editedCell && AnalogInputs::isConnected(cell)) {
+            AnalogInputs::Name pin = AnalogInputs::Name(AnalogInputs::Vb1_pin+i);
+            AnalogInputs::CalibrationPoint p;
+            p.x = AnalogInputs::getAvrADCValue(pin);
+            p.y = cumulative > UINT16_MAX ? UINT16_MAX : cumulative;
+            AnalogInputs::setCalibrationPoint(pin, calibrationPoint, p);
+        }
+    }
+}
+#endif
+
 #ifdef ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
 static void calibrateSimplifiedVb1_pin(AnalogInputs::ValueType real_v)
 {
@@ -84,7 +113,13 @@ static void saveCalibration(AnalogInputs::Name nameEdited, AnalogInputs::Name na
     p.x = adc;
     p.y = newValue;
 
-#ifdef ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+#ifdef ENABLE_CUMULATIVE_BALANCE_PORT
+        if(nameEdited >= AnalogInputs::Vb1 &&
+                nameEdited < AnalogInputs::Name(AnalogInputs::Vb1+MAX_BALANCE_CELLS))
+            calibrateCumulativeBalancePort(nameEdited, p.y);
+        else
+            AnalogInputs::setCalibrationPoint(nameSaveTo, calibrationPoint, p);
+#elif defined(ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT)
         if(nameEdited == AnalogInputs::Vb1)
             calibrateSimplifiedVb1_pin(p.y);
         else if(nameEdited == AnalogInputs::Vb2)
@@ -224,11 +259,11 @@ void voltageCalibration()
 #ifdef ENABLE_EXPERT_VOLTAGE_CALIBRATION
 
 const EditMenu::StaticEditData editExpertVoltageData[] PROGMEM = {
-#ifdef ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+#if defined(ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT) || defined(ENABLE_CUMULATIVE_BALANCE_PORT)
 {string_ev_menu_cell0pin,           COND_EDITABLE,   EANALOG_V(Vb0_pin),         {CE_STEP_TYPE_KEY_SPEED, 0, ANALOG_VOLT(10)}},
 {string_ev_menu_cell1pin,           COND_EDITABLE,   EANALOG_V(Vb1_pin),         {CE_STEP_TYPE_KEY_SPEED, 0, ANALOG_VOLT(10)}},
 {string_ev_menu_cell2pin,           COND_EDITABLE,   EANALOG_V(Vb2_pin),         {CE_STEP_TYPE_KEY_SPEED, 0, ANALOG_VOLT(10)}},
-#endif //ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+#endif
 {string_ev_menu_plusVoltagePin,     COND_EDITABLE,   EANALOG_V(Vout_plus_pin),   {CE_STEP_TYPE_KEY_SPEED, 0, MAX_CHARGE_V}},
 {string_ev_menu_minusVoltagePin,    COND_EDITABLE,   EANALOG_V(Vout_minus_pin),  {CE_STEP_TYPE_KEY_SPEED, 0, MAX_CHARGE_V}},
 {string_menu_point,                 COND_POINT,     {CP_TYPE_UNSIGNED, 0, &calibrationPoint},        {1, 0, 1}},
@@ -236,11 +271,11 @@ const EditMenu::StaticEditData editExpertVoltageData[] PROGMEM = {
 };
 
 const AnalogInputs::Name expertVoltageName[] PROGMEM = {
-#ifdef ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+#if defined(ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT) || defined(ENABLE_CUMULATIVE_BALANCE_PORT)
         AnalogInputs::Vb0_pin,
         AnalogInputs::Vb1_pin,
         AnalogInputs::Vb2_pin,
-#endif //ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
+#endif
         AnalogInputs::Vout_plus_pin,
         AnalogInputs::Vout_minus_pin
 };

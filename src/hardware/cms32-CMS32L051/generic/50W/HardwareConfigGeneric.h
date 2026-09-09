@@ -28,13 +28,17 @@
 #define CALIBRATION_DISCHARGE_POINT0_mA 100
 #define CALIBRATION_DISCHARGE_POINT1_mA 300
 
-#define ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT
-//TODO: should be implemented!
-//when the imaxB6 discharges, the voltage on Vb0_pin
-//(Vb0_pin = VBATT- on the balance port)
-//drops below 0V so the ADC doesn't see it.
-//This is why we see a bigger Vb1 resistance.
-#define ENABLE_B0_DISCHARGE_VOLTAGE_CORRECTION
+/* [ESQUEMA][COMPILA]
+ * Each balance connector tap reaches its own ADC through a different divider.
+ * Calibrate Vb1_pin..Vb6_pin as cumulative tap voltages and subtract adjacent
+ * taps in the core to obtain the six individual cell voltages. */
+#define ENABLE_CUMULATIVE_BALANCE_PORT
+#define CUMULATIVE_BALANCE_PORT_LEGACY_CALIBRATION_VERSION 10
+
+/* [PENDIENTE]
+ * During discharge Vb0_pin (balance-port VBATT-) can fall below MCU ground.
+ * The ADC clips that negative voltage, making Vb1 appear too low and its
+ * calculated resistance too high. There is no correction implemented yet. */
 #define ENABLE_STACK_INFO
 
 #define ENABLE_EXT_TEMP_AND_UART_COMMON_OUTPUT
