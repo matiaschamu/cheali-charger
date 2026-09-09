@@ -166,6 +166,14 @@ foto histórica, no reemplaza `git status` ni `git fetch`.
   manual confirma, entre otros, P17=ANI20, P62=ANI27, P75=ANI34 y P136=ANI36.
 - `[COMPILA]` Adquisición ADC real por interrupción y recorrido de entradas en
   `AnalogInputsADC.cpp`.
+- `[ESQUEMA][COMPILA]` El CMS trata Vb1_pin..Vb6_pin como tomas acumuladas,
+  calibradas antes de restar cada par consecutivo. La calibración CMS v11
+  migra una tabla v10 con CRC válido sin cambiar sus raw ni los otros ports.
+- `[CONTINUIDAD]` P74/Vout- y P75/Vout+ usan el mismo divisor: 100 kΩ serie y
+  20 kΩ a GND. P73 continúa siendo la entrada de corriente de descarga.
+- `[CONTINUIDAD]` P73/Idischarge y Q36=P136/Ismps llegan cada uno directamente
+  al shunt mediante su propia resistencia serie de 10 kΩ. Falta validar en
+  funcionamiento polaridad, escala y terminal del shunt observado por cada uno.
 - `[ESQUEMA][CONTINUIDAD]` El trazado físico coincide hasta ahora para
   Vout+/Vout-, entradas analógicas, UART, balanceadores y señales de potencia.
   Esto no valida canales ADC, polaridades ni comportamiento funcional.
@@ -184,6 +192,26 @@ foto histórica, no reemplaza `git status` ni `git fetch`.
 
 ### Pendiente o de riesgo alto
 
+- `[PENDIENTE]` El objetivo para una futura integración upstream es que el
+  target CMS32L051 no dependa de cambios específicos en `src/core/`. Los
+  agregados `buck test` y `ADC raw test` son herramientas temporales de banco;
+  se retirarán junto con sus entradas y textos del menú común cuando termine
+  la validación.
+- `[PENDIENTE]` El hook `eeprom::initFromFlash()` agregado al arranque común
+  puede salir del core: el port CMS puede invocarlo desde `cpu::init()`, que ya
+  se ejecuta antes de cargar settings o validar la EEPROM.
+- `[PENDIENTE]` La migración de calibración v10 a v11 conserva una EEPROM de
+  desarrollo de este fork y no es un requisito del port nuevo para upstream.
+  Antes de retirarla hay que decidir explícitamente si se restaura la
+  calibración por defecto; la calibración actual no está validada para uso de
+  potencia.
+- `[PENDIENTE]` Los cambios restantes de core para tomas acumuladas no son un
+  menú de desarrollo: `AnalogInputs.cpp` resta tomas ya calibradas y
+  `CalibrationMenus.cpp` convierte el valor individual editado por el menú
+  estándar en puntos acumulados. Restar raw ADC en el driver CMS no es
+  equivalente porque cada toma usa un divisor diferente. Primero validar este
+  modelo en banco y luego diseñar su encapsulación bajo el hardware, o acordar
+  una interfaz genérica mínima con upstream.
 - `[PENDIENTE]` Validar el PWM local de 30 kHz en osciloscopio: frecuencia,
   duty mínimo/máximo, transición 0%/PWM/100%, glitches y temperatura. No dar
   por cierta la frecuencia elegida ni la afirmación de SOA del comentario sin
@@ -270,8 +298,9 @@ quiere conservar calibración y settings. La programación byte a byte puede
 tardar varios minutos.
 
 Durante el desarrollo preferir `cms32_flash_safe` y conservar un backup EEPROM
-distinto por cada estado estable. El backup sólo debe restaurarse sobre una
-versión compatible del layout EEPROM (`e10.3.12` actualmente).
+distinto por cada estado estable. El target CMS usa `e11.3.12`; al primer
+arranque puede migrar una tabla `e10.3.12` con CRC válido, pero no debe
+restaurarse una v10 cruda después de que la sombra ya haya sido marcada v11.
 
 Antes de flashear, verificar:
 
@@ -313,6 +342,161 @@ Mediciones: pines, frecuencia, duty, tensión, corriente, temperatura.
 Riesgos o anomalías:
 Próximo paso mínimo:
 ```
+
+### 2026-09-05 - Entorno de depuración CMS32L051 en Visual Studio Code
+
+- Objetivo: permitir compilación, flasheo seguro y depuración fuente del target
+  CMS32L051 desde Visual Studio Code con ST-Link/OpenOCD/GDB.
+- Archivos modificados/agregados: `.vscode/extensions.json`, `.vscode/tasks.json`,
+  `.vscode/launch.json`, `.vscode/settings.json`, `.gitignore`, `arm-compiler.cmake`,
+  `utils/CMS32L051_flash_tools/flash_debug_safe.ps1`, configuración OpenOCD y
+  README de las herramientas de flash.
+- Por decisión del usuario, la configuración específica de VS Code, el script
+  auxiliar de la sesión Debug y `build-debug-cms32/` se mantienen locales y no
+  forman parte de los commits publicados. Las mejoras generales de OpenOCD y
+  programación por palabras sí se conservan por separado.
+- `[COMPILA]` Se agregó `CHEALI_ARM_OPTIMIZATION`, con `-Os` como valor por
+  defecto compatible. El build separado `build-debug-cms32` usa `Debug`, `-Og`
+  y DWARF sin modificar `build-arm`.
+- `[COMPILA]` Imagen Debug: 38.640 bytes, 25.872 bytes libres antes de `0xFC00`,
+  option bytes `EE 36 E0`, SHA-256
+  `955401962D51DB724E1AF812B77FCBAACDBC27128BCFDC54F4931B7C5FEAF7C4`.
+  GDB resolvió `main()` en `ChealiCharger2.cpp:63`.
+- `[COMPILA]` El build normal conserva `-Os`, mide 34.664 bytes y mantiene los
+  option bytes `EE 36 E0`. Su hash cambió por la regeneración del número de
+  build fechado, no por un cambio de optimización.
+- `[MEDIDO]` Se instaló Cortex-Debug 1.12.1 y se validó GDB 16.3.90 con OpenOCD
+  a 4 MHz. La sesión leyó símbolos y líneas, capturó `Reset_Handler` mediante
+  vector catch y alcanzó un breakpoint hardware temporal en `main`, PC
+  `0x26EC`, SP `0x20002000`.
+- `[MEDIDO]` La configuración OpenOCD ya no expone ni sondea el banco flash
+  STM32 falso y anula los callbacks STM32 de reloj/debug. El reset usa
+  `SYSRESETREQ`, baja SWD a 100 kHz durante reset y vuelve a 4 MHz después.
+- `[COMPILA]` `flash_debug_safe.ps1` valida límite `0xFC00`, option bytes y hash,
+  genera un backup EEPROM con timestamp y usa `cms32_flash_safe_word`. Su modo
+  `-ValidateOnly` se ejecutó correctamente sin iniciar OpenOCD.
+- `[COMPILA]` Las tareas VS Code usan ejecución `process` y rutas absolutas a
+  CMake y PowerShell. Con `shell`, Windows PowerShell separaba argumentos CMake
+  con sufijo decimal o extensión (`3.5`, `.cmake`); con `process` y el comando
+  `cmake` sin ruta, VS Code lo resolvía erróneamente dentro del repositorio.
+  La invocación directa con el vector final de argumentos configuró
+  correctamente `build-debug-cms32` y terminó con código 0.
+- No se flasheó la imagen Debug durante este avance. La configuración
+  `Flash + debug desde main` lo hará sólo cuando el usuario la ejecute.
+- `[RIESGO]` Detenerse en un breakpoint congela lazos de control y protecciones.
+  Depurar únicamente con salida cortada y etapa de potencia desenergizada; no
+  hacerlo durante carga, descarga o con MOSFETs activos. Hay cuatro breakpoints
+  hardware y dos watchpoints; no existe todavía un SVD CMS32L051.
+- Próximo paso mínimo: ejecutar desde VS Code `CMS32L051: Flash + debug desde
+  main` en banco seguro y comprobar variables/stepping sobre la imagen Debug.
+
+### 2026-09-05 - Prueba SWD con convertidor de niveles
+
+- Objetivo: comprobar si el nuevo convertidor de niveles permite programar el
+  CMS32L051 mediante el ST-Link V2.
+- Montaje: ST-Link V2J46S7 conectado al cargador a través del convertidor de
+  niveles instalado por el usuario; OpenOCD informó una tensión objetivo de
+  3,286 V.
+- `[COMPILA]` El target CMS aislado compiló sin errores. Imagen de 34.664 bytes,
+  option bytes `EE 36 E0` y SHA-256
+  `B53E07174DD69083304E067F4AE52884A83E8654C31F4404DB939267F7816D24`.
+- `[MEDIDO]` El primer montaje no permitió establecer comunicación SWD a 4 MHz
+  ni a 100 kHz, tampoco conectando bajo reset. Esos intentos no detuvieron,
+  borraron ni programaron el MCU.
+- `[MEDIDO]` Después del ajuste del usuario, OpenOCD conectó a 100 kHz, leyó
+  `SWD DPIDR 0x0bc11477` y detectó correctamente el Cortex-M0+ r0p1.
+- `[MEDIDO]` Se ejecutó `cms32_flash_safe`: creó el backup EEPROM, borró sólo
+  el área de firmware, programó y verificó los 34.664 bytes, confirmó
+  `EEPROM backup matches flash` y reinició el MCU sin errores de enlace.
+- Backup EEPROM:
+  `build-arm/eeprom-2026-09-05-level-shifter-program-test.bin`, 1.024 bytes,
+  firma `chli`, SHA-256
+  `29E43122E5A431BC7E87330C3E9E431A14CC0B3D6727937C9B8BF2D0BB609E6E`.
+- `[MEDIDO]` La frecuencia máxima efectiva del ST-Link V2J46S7 es 4 MHz;
+  al solicitar 8 MHz, OpenOCD informó que usaría 4 MHz. A 4 MHz se completaron
+  diez conexiones y lecturas integrales consecutivas de firmware y EEPROM.
+  Las veinte comparaciones SHA-256 coincidieron, sin errores, con tensión
+  objetivo entre 3,279 V y 3,286 V.
+- `[MEDIDO]` Una segunda ejecución completa de `cms32_flash_safe` a 4 MHz creó
+  un backup, borró y programó firmware, verificó los 34.664 bytes, confirmó la
+  EEPROM preservada y reinició el MCU sin errores. OpenOCD informó 3,292 V.
+- Backup de la prueba a 4 MHz:
+  `build-arm/eeprom-2026-09-05-4mhz-program-test.bin`, 1.024 bytes, firma
+  `chli`, SHA-256
+  `29E43122E5A431BC7E87330C3E9E431A14CC0B3D6727937C9B8BF2D0BB609E6E`;
+  coincide exactamente con el backup de la prueba a 100 kHz.
+- `[MANUAL][MEDIDO]` La sección 27.4.3 del User Manual V1.2.3 especifica
+  programación por palabra. Se agregó la variante experimental
+  `cms32_flash_safe_word`, que conserva como respaldo el método byte a byte,
+  ejecuta un ciclo FMC y espera `OVF` por cada palabra alineada de 32 bits.
+- `[MEDIDO]` A 4 MHz, `cms32_flash_safe_word` programó 34.664 bytes como 8.666
+  palabras, verificó exactamente el firmware y la EEPROM preservada y reinició
+  el MCU. Duración total medida: 55,623 s, frente a aproximadamente 210 s para
+  el método byte a byte a igual velocidad SWD; mejora aproximada de 3,8 veces.
+- Backup de la prueba por palabras:
+  `build-arm/eeprom-2026-09-05-word-program-test.bin`, 1.024 bytes, firma
+  `chli`, SHA-256
+  `29E43122E5A431BC7E87330C3E9E431A14CC0B3D6727937C9B8BF2D0BB609E6E`;
+  coincide con los dos backups previos.
+- No se ejecutaron menús de prueba ni se habilitaron MOSFETs.
+- Próximo paso mínimo: decidir si la variante por palabras pasa a ser el flujo
+  recomendado; mantener el método byte disponible hasta acumular más pruebas.
+
+### 2026-08-22 - Reconstrucción acumulativa de las seis celdas
+
+- Objetivo: corregir el modelo heredado que sólo restaba Vb0/Vb1/Vb2 y copiaba
+  Vb3..Vb6 como si fueran tensiones individuales.
+- Archivos modificados: `src/core/AnalogInputs.cpp`,
+  `src/core/calibration/CalibrationMenus.cpp`, `src/core/eeprom.cpp`,
+  `src/core/Version.h.in`, configuración/pines/calibración inicial del target
+  CMS, `cpu/memory.*` y `MANUAL_FUNCIONAMIENTO_CORE.md`.
+- `[ESQUEMA][COMPILA]` `ENABLE_CUMULATIVE_BALANCE_PORT` calibra cada canal como
+  tensión acumulada y calcula `VbN=max(tomaN-tomaN-1,0)` para N=1..6. AVR y
+  Nuvoton conservan la rama `ENABLE_SIMPLIFIED_VB0_VB2_CIRCUIT` anterior.
+- `[COMPILA]` El menú de tensión guarda el valor individual editado como una
+  toma acumulada y actualiza las tomas superiores conectadas para mantenerlas
+  coherentes cuando se corrige una celda inferior.
+- `[COMPILA]` El target usa calibración EEPROM v11. Una tabla v10 con CRC válido
+  se migra una sola vez: acumula los `y` de Vb3..Vb6 y genera la versión y el
+  CRC nuevos. Los raw `x`, programas y settings no se modifican. La conversión
+  se agrupa en RAM y realiza una sola resincronización completa de la EEPROM
+  emulada; al reiniciar, versión y CRC rechazan una imagen parcial.
+- `[COMPILA]` Target CMS aislado: texto 34.632 bytes, data 32, BSS 3.384 e
+  imagen de 34.664 bytes. Option bytes `EE 36 E0`, SHA-256
+  `B53E07174DD69083304E067F4AE52884A83E8654C31F4404DB939267F7816D24`.
+- La compilación aislada Nuvoton avanzó por los archivos compartidos y falló
+  después en `_syscalls.c` por el problema heredado de cabeceras C++ ya
+  documentado; no apareció un error atribuible a esta modificación.
+- Valores documentados: P31/Vb0 10 kΩ serie; tomas con 47 kΩ a GND y series
+  P17=47 kΩ, P30=91 kΩ, P70=147 kΩ, P71=191 kΩ y P72=240 kΩ.
+- `[CONTINUIDAD]` El usuario confirmó en hardware la red de P14/Vb1: 47 kΩ desde
+  la toma VB1 hasta P14 y 1 MΩ desde P14 a masa. Esta medición reemplaza el
+  valor contradictorio rotulado en el esquema disponible.
+- `[CONTINUIDAD]` El usuario corrigió el informe inicial: los divisores de
+  100 kΩ serie y 20 kΩ a masa corresponden a P74/Vout- y P75/Vout+. P73 no
+  forma parte de esa red y conserva su asignación `Idischarge`.
+- `[CONTINUIDAD]` El usuario confirmó que P73/Idischarge y Q36=P136/Ismps
+  están conectados cada uno directamente al shunt mediante una resistencia
+  serie individual de 10 kΩ. Esto no valida todavía polaridad ni escala ADC.
+- `[MEDIDO]` Con autorización explícita se flasheó la imagen de 34.664 bytes
+  mediante `cms32_flash_safe`. ST-Link V2J46S7 informó 3,255 V; OpenOCD borró
+  y programó sólo firmware, verificó la imagen, confirmó
+  `EEPROM backup matches flash` y reinició el MCU.
+- Backup EEPROM v10 previo:
+  `build-arm/eeprom-2026-08-22-before-cumulative-v11.bin`, 1.024 bytes, firma
+  `chli`, SHA-256
+  `B939A6462790661FAB92BCD0E443C13E31BFF5B63065E3FBB83AD24791BF5390`.
+- `[MEDIDO]` Tras el primer arranque se obtuvo un segundo backup de sólo lectura:
+  `build-arm/eeprom-2026-08-22-after-cumulative-v11.bin`, 1.024 bytes, firma
+  `chli`, SHA-256
+  `B4F60C65B7294A79246585E7DE276728BEAA1AB88E48B5830301788A0D30A112`.
+  La versión de calibración cambió de 10 a 11; entre ambos archivos cambiaron
+  11 bytes correspondientes a versión, calibración acumulada y CRC. Programas
+  y settings permanecieron iguales. El segundo acceso midió 3,279 V y reinició
+  nuevamente el MCU.
+- No se ejecutó calibración ni se habilitaron MOSFETs durante este avance.
+- Próximo paso mínimo: con salida cortada, medir raw y tensión de Vb0..Vb6,
+  calibrar de Vb1 a Vb6 y comprobar cada celda y la suma antes de balancear.
 
 ### 2026-08-20 - Manual completo de funcionamiento del core y del port CMS
 

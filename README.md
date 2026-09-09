@@ -78,6 +78,20 @@ Hardware
 **Nuvoton NuMicro M0517LBN CPU:**
 - IMAX B6 Charger/Discharger 1-6 Cells
 
+**Experimental Cmsemicon CMS32L051 port:**
+- iMAX B6 80W clone, PCB `B6-CMS V12`
+- Display, buttons, buzzer, SWD flashing and source-level debugging have been
+  exercised on hardware.
+- ADC scaling, PWM, power-stage polarity, closed-loop charging, discharging and
+  balancing are still under bench validation. Do not treat a successful build
+  or boot as validation of the power stage.
+- Keep the output cut and the power stage de-energized while debugging. Initial
+  powered tests require a current-limited supply, fuse, safe load and
+  oscilloscope verification; do not use a LiPo as the first load.
+- Port notes and current evidence are maintained in
+  [`AGENTS.md`](AGENTS.md) and the
+  [CMS32L051 core/port manual](docs/imaxB6-80W-Cmsemicon-CMS32L051/MANUAL_FUNCIONAMIENTO_CORE.md).
+
 **Unsupported due to old or uncommon CPU See [#106](https://github.com/stawel/cheali-charger/issues/106)**
 - [Turnigy Accucel-6 80W Balancer/Charger](https://hobbyking.com/en_us/turnigy-accucel-6-80w-10a-1-6s-balancer-charger-suitable-for-lihv.html)
 - IMAX B6 Mini 1-6 60W Balancer/Charger

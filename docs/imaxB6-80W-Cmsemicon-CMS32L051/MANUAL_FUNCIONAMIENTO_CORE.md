@@ -694,14 +694,65 @@ Cada entrada se toma en ráfagas: se descarta la primera muestra tras cambiar ca
 | promedio rápido de 70 | PID y cutoff rápido Vout+ |
 | oversampling 256 + promedio del core | raw, calibración y mediciones generales |
 
+`[CONTINUIDAD]` El sensado del shunt llega por dos caminos independientes:
+P73/ANI32 (`Idischarge`) y Q36=P136/ANI36 (`Ismps`) están conectados cada uno
+directamente al shunt mediante su propia resistencia serie de 10 kΩ. Esta
+continuidad confirma los canales, pero por sí sola no determina la polaridad,
+la escala corriente/raw ni qué terminal del shunt corresponde a cada entrada;
+esas propiedades deben verificarse energizando sólo bajo el procedimiento de
+banco seguro.
+
 ### 13.2 Magnitudes virtuales
+
+En el target CMS las seis entradas del conector de balance son tomas
+acumuladas respecto de `VBATT-`. Cada toma tiene un divisor distinto para que
+la tensión aplicada al ADC permanezca dentro de rango:
+
+| Canal | Pin | Red informada / esquemática | Magnitud calibrada |
+|---|---|---|---|
+| `Vb0_pin` | P31/ANI22 | 10 kΩ serie, sin divisor | referencia `VBATT-` |
+| `Vb1_pin` | P14/ANI17 | 47 kΩ desde VB1 hasta P14; 1 MΩ desde P14 a GND `[CONTINUIDAD]` | toma C1 |
+| `Vb2_pin` | P17/ANI20 | 47 kΩ serie / 47 kΩ a GND | toma C1+C2 |
+| `Vb3_pin` | P30/ANI21 | 91 kΩ serie / 47 kΩ a GND | toma C1+C2+C3 |
+| `Vb4_pin` | P70/ANI29 | 147 kΩ serie / 47 kΩ a GND | toma C1+...+C4 |
+| `Vb5_pin` | P71/ANI30 | 191 kΩ serie / 47 kΩ a GND | toma C1+...+C5 |
+| `Vb6_pin` | P72/ANI31 | 240 kΩ serie / 47 kΩ a GND | toma C1+...+C6 |
+
+Los valores fueron informados por el usuario el 2026-08-22. La red de P14 fue
+confirmada directamente en hardware: 47 kΩ entre la toma VB1 y P14, y 1 MΩ
+entre P14 y masa. El esquema disponible rotula otro valor para esa red y queda
+reemplazado por esta evidencia `[CONTINUIDAD]`. El firmware no usa coeficientes
+ideales derivados de esos resistores: la calibración convierte cada ADC a la
+tensión acumulada real de su toma.
+
+Con `ENABLE_CUMULATIVE_BALANCE_PORT`, las magnitudes virtuales son:
 
 ```text
 Vout = max(Vout_plus - Vout_minus, 0)
 Vb1 = max(Vb1_pin - Vb0_pin, 0)
 Vb2 = max(Vb2_pin - Vb1_pin, 0)
+Vb3 = max(Vb3_pin - Vb2_pin, 0)
+Vb4 = max(Vb4_pin - Vb3_pin, 0)
+Vb5 = max(Vb5_pin - Vb4_pin, 0)
+Vb6 = max(Vb6_pin - Vb5_pin, 0)
 Vbalancer = suma de celdas detectadas
 ```
+
+La resta se hace después de calibrar. Restar los raw ADC sería incorrecto
+porque cada canal tiene un divisor diferente.
+
+La calibración CMS pasa de `e10.3.12` a `e11.3.12`. En el primer arranque, una
+tabla v10 con CRC válido se migra una sola vez: Vb1 y Vb2 se conservan, y para
+Vb3...Vb6 se acumulan los valores `y` anteriores manteniendo sus raw `x`. La
+conversión se prepara completa en RAM, se calcula el CRC nuevo y la EEPROM
+emulada se resincroniza una sola vez. Al reiniciar, la combinación de versión
+y CRC rechaza una imagen interrumpida o parcial. Esto conserva los puntos
+existentes, pero sigue siendo obligatorio
+verificarlos y recalibrarlos con multímetro antes de habilitar balanceo.
+
+Durante descarga continúa pendiente la corrección de `Vb0_pin`: si `VBATT-`
+cae por debajo del GND del MCU, el ADC recorta la tensión negativa y Vb1 queda
+artificialmente baja.
 
 La tensión usada como batería es:
 
@@ -2207,7 +2258,17 @@ Ambas deben cubrir el rango global.
 
 ### 18.2 Tensión
 
-El menú normal requiere batería y balanceador. Ajusta Vin y celdas. Al guardar una celda copia la suma del balance a Vout+/Vout− suponiendo divisores iguales. El circuito simplificado Vb0/Vb1/Vb2 necesita cálculos especiales para obtener celdas individuales.
+El menú normal requiere batería y balanceador. Ajusta Vin y las tensiones
+individuales Vb1...Vb6. Para el CMS, al aceptar una celda el firmware convierte
+ese valor a la tensión acumulada de su toma y actualiza el punto seleccionado de
+esa toma y de todas las tomas conectadas superiores. Conviene calibrar de Vb1 a
+Vb6 y comprobar al final tanto cada celda como `V1-6`.
+
+Al guardar una celda también copia la suma del balance a Vout+/Vout−. Esta
+operación es coherente con el hardware confirmado: P74 (`Vout-`) y P75
+(`Vout+`) tienen ambos un divisor de 100 kΩ serie y 20 kΩ a GND
+`[CONTINUIDAD]`. P73 continúa asignado a `Idischarge`; su inclusión en el
+primer informe de divisores fue corregida por el usuario.
 
 ### 18.3 Corriente
 
