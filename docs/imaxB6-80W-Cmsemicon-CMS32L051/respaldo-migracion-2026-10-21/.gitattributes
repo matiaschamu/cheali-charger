@@ -1,0 +1,3 @@
+# Preserve exact bytes so SHA-256 remains valid across operating systems.
+* -text -diff
+**/* -text -diff

@@ -343,6 +343,24 @@ Riesgos o anomalías:
 Próximo paso mínimo:
 ```
 
+### 2026-10-21 - Traspaso a otra PC
+
+- Objetivo: conservar el trabajo local y los respaldos antes de retirar esta carpeta.
+- El usuario autorizó guardar, crear los commits pendientes y subirlos. Esta
+  decisión reemplaza la anterior de mantener VS Code y el script Debug locales.
+- Archivos: configuración `.vscode/`, `arm-compiler.cmake`, script y README de
+  depuración, `.gitignore` y `TRASPASO_PC.md` en la documentación del port.
+- Se preservaron 54 archivos locales (EEPROM, lecturas de firmware, imágenes,
+  ELF, versiones y manifiesto anterior) en `respaldo-migracion-2026-10-21/`, con
+  un manifiesto SHA-256 nuevo. No restaurar una EEPROM v10 sobre v11.
+- [PENDIENTE] Las rutas de CMake, MinGW, Arm GNU y OpenOCD deben verificarse en
+  la nueva PC; no copiar los caches CMake. Los backups de Debug del 5 y 6 de
+  septiembre se conservaron sin inferir pruebas funcionales a partir del nombre.
+- Prueba: revisión de JSON, validación estática del script, hashes de las copias,
+  compilación CMS aislada y `git diff --check` (ver resultados del traspaso).
+- No se conectó, flasheó ni accionó hardware durante este traspaso.
+- Próximo paso mínimo: clonar `buck-boost-pruebas`, seguir `TRASPASO_PC.md` y
+  configurar/compilar sin accionar hardware.
 ### 2026-09-05 - Entorno de depuración CMS32L051 en Visual Studio Code
 
 - Objetivo: permitir compilación, flasheo seguro y depuración fuente del target
