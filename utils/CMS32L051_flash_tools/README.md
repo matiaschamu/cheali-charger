@@ -74,3 +74,32 @@ The legacy procedures program byte-by-byte. `cms32_flash_safe_word` uses the
 documented 32-bit word-program mode while retaining the same EEPROM backup and
 verification steps. On the tested ST-Link V2 setup at 4 MHz, a 34,664-byte
 image completed in about 56 seconds instead of about 210 seconds.
+
+## Visual Studio Code debugging
+
+The repository contains workspace configurations in `.vscode/` for the
+CMS32L051 target. They use Cortex-Debug, Arm GNU GDB and the OpenOCD target
+configuration in this directory. The debug firmware is built separately in
+`build-debug-cms32/` with `-Og` and DWARF symbols; the normal `build-arm/`
+directory is not changed.
+
+Install the recommended workspace extensions when VS Code asks. On the tested
+Windows host, Cortex-Debug is already installed.
+
+From **Run and Debug**, choose one of these configurations:
+
+* `CMS32L051: Flash + debug desde main` builds the debug image, validates its
+  size and option bytes, creates a timestamped EEPROM backup, programs by
+  32-bit words, verifies firmware and EEPROM, then resets and stops at `main`.
+* `CMS32L051: Adjuntar sin reset ni flasheo` attaches to the running target and
+  halts at its current instruction. Use it only when the flashed image matches
+  the ELF in `build-debug-cms32/`.
+
+The CMS32L051 exposes four hardware breakpoints and two watchpoints. OpenOCD is
+configured to force hardware breakpoints because its generic STM32 flash bank
+is deliberately disabled for this MCU.
+
+Stopping at a breakpoint freezes firmware execution, including control loops
+and safety handling. Debug only with the charger output cut and the power stage
+in a safe, de-energized bench configuration. Do not use source-level debugging
+while charging/discharging a battery or driving MOSFETs.

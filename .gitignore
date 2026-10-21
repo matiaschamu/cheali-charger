@@ -23,5 +23,7 @@ cmake_install.cmake
 src/core/Version.h
 build_ubuntu.sh
 build-arm-cms32/
+build-debug-cms32/
+/build-arm/
 .claude/
 local-backups/

@@ -1,0 +1,76 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMS32L051: Configure debug",
+            "type": "process",
+            "command": "C:\\Program Files\\CMake\\bin\\cmake.exe",
+            "args": [
+                "-S",
+                "${workspaceFolder}",
+                "-B",
+                "${workspaceFolder}/build-debug-cms32",
+                "-G",
+                "MinGW Makefiles",
+                "-DCMAKE_MAKE_PROGRAM=C:/GCC/mingw64/bin/mingw32-make.exe",
+                "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/arm-toolchain.cmake",
+                "-Denable-short-names=ON",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+                "-DCHEALI_ARM_OPTIMIZATION=-Og"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PATH": "C:\\GCC\\mingw64\\bin;C:\\Program Files\\Arm\\GNU Toolchain mingw-w64-x86_64-arm-none-eabi\\bin;${env:PATH}"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "CMS32L051: Build debug",
+            "type": "process",
+            "command": "C:\\Program Files\\CMake\\bin\\cmake.exe",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build-debug-cms32",
+                "--target",
+                "imaxB6-80W-cms32L051_cms32-CMS32L051",
+                "--parallel",
+                "4"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PATH": "C:\\GCC\\mingw64\\bin;C:\\Program Files\\Arm\\GNU Toolchain mingw-w64-x86_64-arm-none-eabi\\bin;${env:PATH}"
+                }
+            },
+            "dependsOn": "CMS32L051: Configure debug",
+            "dependsOrder": "sequence",
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CMS32L051: Flash debug safely (word)",
+            "type": "process",
+            "command": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/utils/CMS32L051_flash_tools/flash_debug_safe.ps1"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "CMS32L051: Build debug",
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        }
+    ]
+}

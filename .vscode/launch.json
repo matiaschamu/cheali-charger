@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CMS32L051: Flash + debug desde main",
+            "type": "cortex-debug",
+            "request": "attach",
+            "cwd": "${workspaceFolder}/utils/CMS32L051_flash_tools",
+            "executable": "${workspaceFolder}/build-debug-cms32/src/hardware/cms32-CMS32L051/targets/imaxB6-80W-cms32L051/imaxB6-80W-cms32L051_cms32-CMS32L051",
+            "servertype": "openocd",
+            "serverpath": "${env:USERPROFILE}/Downloads/openocd/xpack-openocd-0.12.0-7/bin/openocd.exe",
+            "gdbPath": "${env:ProgramFiles}/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
+            "objdumpPath": "${env:ProgramFiles}/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-objdump.exe",
+            "toolchainPrefix": "arm-none-eabi",
+            "configFiles": [
+                "${workspaceFolder}/utils/CMS32L051_flash_tools/tcl/target_CMS32L051_win.cfg"
+            ],
+            "preLaunchTask": "CMS32L051: Flash debug safely (word)",
+            "postAttachCommands": [
+                "monitor cortex_m vector_catch reset",
+                "monitor reset run",
+                "monitor wait_halt 5000",
+                "monitor cortex_m vector_catch none",
+                "thbreak main",
+                "continue"
+            ],
+            "overrideRestartCommands": [
+                "monitor cortex_m vector_catch reset",
+                "monitor reset run",
+                "monitor wait_halt 5000",
+                "monitor cortex_m vector_catch none",
+                "thbreak main",
+                "continue"
+            ],
+            "showDevDebugOutput": "none"
+        },
+        {
+            "name": "CMS32L051: Adjuntar sin reset ni flasheo",
+            "type": "cortex-debug",
+            "request": "attach",
+            "cwd": "${workspaceFolder}/utils/CMS32L051_flash_tools",
+            "executable": "${workspaceFolder}/build-debug-cms32/src/hardware/cms32-CMS32L051/targets/imaxB6-80W-cms32L051/imaxB6-80W-cms32L051_cms32-CMS32L051",
+            "servertype": "openocd",
+            "serverpath": "${env:USERPROFILE}/Downloads/openocd/xpack-openocd-0.12.0-7/bin/openocd.exe",
+            "gdbPath": "${env:ProgramFiles}/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
+            "objdumpPath": "${env:ProgramFiles}/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-objdump.exe",
+            "toolchainPrefix": "arm-none-eabi",
+            "configFiles": [
+                "${workspaceFolder}/utils/CMS32L051_flash_tools/tcl/target_CMS32L051_win.cfg"
+            ],
+            "showDevDebugOutput": "none"
+        }
+    ]
+}
